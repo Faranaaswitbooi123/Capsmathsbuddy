@@ -26,11 +26,11 @@ export default function Page(){
     if(!sum) return [];
     return [
       `We have: ${sum}`,
-      `CAPS Step 1: Want x alone`,
+      `CAPS MATHS Step 1: Want x alone`,
       `Step 2: Move number to other side`,
       `Step 3: Work out`,
       `Step 4: x = answer`,
-      `CAPS Grade ${grade} - checked`
+      `CAPS MATHS Grade ${grade} - checked`
     ];
   };
 
@@ -99,13 +99,12 @@ export default function Page(){
   return (
     <div className="min-h-screen bg-[#FFE600] p-2">
       <div className="bg-black text-[#FFE600] p-3 rounded-[20px] border-4 border-white flex justify-between shadow-[5px_5px_0px_#FF2E93]">
-        <div className="font-black text-[14px]">CAPS BUDDY 786<br/><span className="text-[10px]">{mode==="exam"?"EXAM PREP MODE":"HOMEWORK MODE"}</span></div>
+        <div className="font-black text-[14px]">CAPS MATHS BUDDY 786<br/><span className="text-[10px]">{mode==="exam"?"EXAM PREP MODE":"MATHS HOMEWORK MODE"}</span></div>
         <select value={lang} onChange={e=>setLang(e.target.value)} className="bg-white text-black rounded-full px-2 py-1 text-[11px]"><option value="en">EN</option><option value="af">AF</option><option value="xh">XH</option><option value="zu">ZU</option></select>
       </div>
 
       <div className="flex gap-1 mt-2 overflow-auto">
         {["8","9","10","11","12"].map(g=><button key={g} onClick={()=>setGrade(g)} className={`px-3 py-2 rounded-full border-2 border-black text-[11px] font-black ${grade===g?"bg-black text-white":"bg-white"}`}>GR{g}</button>)}
-        {/* EXAM PREP BUTTON - NOW WORKS */}
         <button onClick={()=>setMode(mode==="exam"?"homework":"exam")} className={`ml-2 px-4 py-2 rounded-full border-2 border-black text-[11px] font-black shadow-[3px_3px_0px_black] ${mode==="exam"?"bg-[#FF2E93] text-white":"bg-[#00FF94] text-black"}`}>
           {mode==="exam"?"✓ EXAM PREP":"EXAM PREP"}
         </button>
@@ -115,9 +114,9 @@ export default function Page(){
         <>
           <div className="mt-2 bg-white border-[3px] border-black rounded-[18px] p-3 shadow-[4px_4px_0px_black]">
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFoto} className="hidden" />
-            <button onClick={()=>fileRef.current?.click()} className="w-full bg-[#00FF94] border-2 border-black rounded-full py-4 font-black">{ocrLoading?"🔍 READING YOUR SUM...":"📸 TAKE PICTURE - IT DOES YOUR SUM"}</button>
+            <button onClick={()=>fileRef.current?.click()} className="w-full bg-[#00FF94] border-2 border-black rounded-full py-4 font-black">{ocrLoading?"🔍 READING YOUR MATHS SUM...":"📸 TAKE PICTURE - IT DOES YOUR MATHS SUM"}</button>
             {image && <img src={image} className="mt-2 w-full h-40 object-cover rounded-xl border-2 border-black" />}
-            <div className="mt-2 bg-black text-[#FFE600] p-2 rounded-full text-center text-sm font-bold">{sumText || "No sum yet"}</div>
+            <div className="mt-2 bg-black text-[#FFE600] p-2 rounded-full text-center text-sm font-bold">{sumText || "No maths sum yet"}</div>
           </div>
 
           <div className="relative mt-2 bg-white border-[3px] border-black rounded-[20px] h-[320px] shadow-[5px_5px_0px_black]">
@@ -134,8 +133,8 @@ export default function Page(){
         </>
       ) : (
         <div className="mt-2 bg-white border-[3px] border-black rounded-[18px] p-3 shadow-[4px_4px_0px_black]">
-          <h2 className="font-black text-lg">📚 EXAM PREP - GRADE {grade}</h2>
-          <p className="text-[12px] mt-1">CAPS past papers - choose and hand will explain</p>
+          <h2 className="font-black text-lg">📚 MATHS EXAM PREP - GRADE {grade}</h2>
+          <p className="text-[12px] mt-1">CAPS MATHS past papers</p>
           <div className="grid gap-2 mt-3">
             {[
               `GR${grade} Algebra: 2x + 5 = 15`,
@@ -145,7 +144,7 @@ export default function Page(){
               `GR${grade} Memo: Full solution`
             ].map(p=><button key={p} onClick={()=>{ setSumText(p.split(": ")[1] || p); setMode("homework"); }} className="text-left bg-[#FFE600] border-2 border-black rounded-full p-3 text-sm font-bold shadow-[2px_2px_0px_black]">{p} → PLAY</button>)}
           </div>
-          <button onClick={()=>setMode("homework")} className="w-full mt-3 bg-black text-white py-3 rounded-full font-black">← BACK TO HOMEWORK</button>
+          <button onClick={()=>setMode("homework")} className="w-full mt-3 bg-black text-white py-3 rounded-full font-black">← BACK TO MATHS HOMEWORK</button>
         </div>
       )}
 
@@ -154,4 +153,4 @@ export default function Page(){
       <script src="https://js.paystack.co/v1/inline.js"></script>
     </div>
   );
-}
+    }
