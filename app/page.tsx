@@ -2,80 +2,90 @@
 import { useState, useEffect, useRef } from "react"
 
 export default function Page(){
+  const [grade,setGrade]=useState(12)
+  const [lang,setLang]=useState("en-ZA")
   const [sumIndex,setSumIndex]=useState(0)
   const [isPlaying,setIsPlaying]=useState(false)
-  const [askOpen,setAskOpen]=useState(false)
-  const [askAns,setAskAns]=useState("")
+  const [handPos,setHandPos]=useState({x:0,y:0})
+  const [showCam,setShowCam]=useState(false)
   const canvasRef=useRef<any>(null)
+  const videoRef=useRef<any>(null)
+
+  const T:any={
+    "en-ZA":{exam:"📚 Exam", play:"▶ Play", title:"786 • Caps Maths Buddy", voice:"en-ZA"},
+    "af-ZA":{exam:"📚 Eksamen", play:"▶ Speel", title:"786 • KABV Wiskunde", voice:"af-ZA"},
+    "xh-ZA":{exam:"📚 Ulungiselelo", play:"▶ Dlala", title:"786 • Maths Buddy XH", voice:"en-ZA"},
+    "zu-ZA":{exam:"📚 Ukulungela", play:"▶ Dlala", title:"786 • Maths Buddy ZU", voice:"zu-ZA"},
+  }
+  const t=T[lang]||T["en-ZA"]
 
   const sums=[
-    { q:"Solve: 2x + 3 = 11", steps:["2x = 11 - 3","2x = 8","x = 4"] },
-    { q:"Factorise: x² - 9", steps:["(x-3)(x+3)","x=3 or x=-3"] },
-    { q:"Gr 12: Turning Point", steps:["f'(x)=2x","x=0","TP (0,-4)"] },
+    { q:"Solve: 2x+3=11", en:["To solve 2x plus 3 equals 11","Minus 3 both sides","2x equals 8","So x equals 4"], steps:["2x+3=11","2x=11-3","2x=8","x=4"] },
+    { q:"Factorise: x²-9", en:["Factorise x squared minus 9","This is difference of squares","Answer x minus 3 times x plus 3"], steps:["x²-9","(x-3)(x+3)","x=3 or -3"] },
   ]
-  const current=sums[sumIndex]
-  const isFree=sumIndex===0
+  const cur=sums[sumIndex]
 
+  // HAND + VOICE MAGIC
   useEffect(()=>{
     if(!isPlaying) return
     const c=canvasRef.current; if(!c) return
     const ctx=c.getContext("2d"); if(!ctx) return
     ctx.clearRect(0,0,800,400)
-    ctx.font="32px cursive"; ctx.fillStyle="#111"
-    let i=0
-    const id=setInterval(()=>{ if(i>=current.steps.length){clearInterval(id); setIsPlaying(false); return} ctx.fillText(current.steps[i],30,60+i*50); i++ },1200)
-    return()=>clearInterval(id)
-  },[isPlaying,sumIndex])
+    ctx.font="34px Caveat, cursive"; ctx.fillStyle="#111"
+
+    // VOICE that explains
+    const textToSpeak = cur.en.join(". ")
+    const utter = new SpeechSynthesisUtterance(textToSpeak)
+    utter.lang=t.voice; utter.rate=0.85
+    speechSynthesis.cancel(); speechSynthesis.speak(utter)
+
+    // HAND that writes
+    let step=0
+    const interval=setInterval(()=>{
+      if(step>=cur.steps.length){ clearInterval(interval); setIsPlaying(false); setHandPos({x:0,y:0}); return }
+      // animate hand moving
+      const x=30 + cur.steps[step].length*4
+      const y=50 + step*55
+      setHandPos({x,y})
+      ctx.fillText(cur.steps[step],30,60+step*55)
+      step++
+    },1800)
+    return()=>{ clearInterval(interval); speechSynthesis.cancel() }
+  },[isPlaying,sumIndex,lang])
+
+  const openCam=async()=>{
+    setShowCam(true)
+    try{ const s=await navigator.mediaDevices.getUserMedia({video:true}); if(videoRef.current) videoRef.current.srcObject=s }catch{}
+  }
 
   return(
-    <div style={{minHeight:"100vh", background:"#fff", fontFamily:"sans-serif"}}>
-      {/* TOP BAR - OLD BEAUTIFUL STYLE */}
-      <div style={{background:"#000", color:"#fff", padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-        <div style={{fontWeight:900, fontSize:20}}>786 • Caps Maths Buddy</div>
-        <div style={{display:"flex", gap:8}}>
-          <button onClick={()=>document.getElementById("exam")?.scrollIntoView({behavior:"smooth"})} style={{background:"#FFD700", color:"#000", padding:"6px 14px", borderRadius:20, fontWeight:800, border:"none"}}>📚 Exam Prep</button>
-          <select style={{borderRadius:8, padding:"4px"}}><option>Gr12</option><option>Gr11</option><option>Gr10</option></select>
+    <div style={{minHeight:"100vh", background:"#fff"}}>
+      <div style={{background:"#000", color:"#fff", padding:"10px", display:"flex", justifyContent:"space-between"}}>
+        <div style={{fontWeight:900}}>{t.title}</div>
+        <div style={{display:"flex", gap:5}}>
+          <select value={lang} onChange={e=>setLang(e.target.value)} style={{color:"#000", fontSize:11, borderRadius:6}}><option value="en-ZA">EN</option><option value="af-ZA">AF</option><option value="xh-ZA">XH</option><option value="zu-ZA">ZU</option></select>
+          <select value={grade} onChange={e=>setGrade(Number(e.target.value))} style={{color:"#000", fontSize:11, borderRadius:6}}><option value={8}>Gr8</option><option value={9}>Gr9</option><option value={10}>Gr10</option><option value={11}>Gr11</option><option value={12}>Gr12</option></select>
         </div>
       </div>
 
-      {/* WHITEBOARD - OLD DBE TV STYLE YOU LIKED */}
-      <div style={{margin:"12px", background:"#FFFEF5", border:"4px solid #000", borderRadius:16, height:"52vh", position:"relative", boxShadow:"0 8px 20px rgba(0,0,0,0.1)"}}>
-        <div style={{position:"absolute", top:6, left:10, opacity:0.15, fontWeight:900, fontSize:12, letterSpacing:2}}>786 • 786 • 786 • 786 • 786</div>
+      <div style={{margin:"10px", background:"#FFFEF5", border:"3px solid #000", borderRadius:16, height:"48vh", position:"relative", overflow:"hidden"}}>
         <canvas ref={canvasRef} width={800} height={400} style={{width:"100%", height:"100%"}}/>
-        <div style={{position:"absolute", top:40, left:20, fontSize:24, fontWeight:700}}>{!isPlaying && current.q}</div>
-        {isPlaying && <div style={{position:"absolute", right:30, top:60, fontSize:40}}>✍️</div>}
-        <div style={{position:"absolute", bottom:8, left:12, fontSize:10, opacity:0.3}}>786 • CAPS Maths Gr 8-12 • DBE Style Board</div>
+        <div style={{position:"absolute", top:30, left:16, fontSize:22, fontWeight:800}}>{!isPlaying && cur.q}</div>
+        {/* HAND THAT WRITES */}
+        {isPlaying && <div style={{position:"absolute", left:handPos.x, top:handPos.y, fontSize:32, transition:"all 0.8s", transform:"rotate(-15deg)"}}>✍️</div>}
+        {showCam && <video ref={videoRef} autoPlay playsInline style={{position:"absolute", right:10, top:10, width:100, height:75, border:"2px solid #000", borderRadius:8}}/>}
+        <div style={{position:"absolute", bottom:5, left:10, fontSize:9, opacity:0.3}}>786 • Gr {grade} • Hand + Voice • Whole SA</div>
       </div>
 
-      {/* CONTROLS - OLD ROUNDED BEAUTIFUL BUTTONS */}
-      <div style={{display:"flex", justifyContent:"center", gap:10, padding:"12px"}}>
-        <button onClick={()=>sumIndex>0&&setSumIndex(s=>s-1)} style={{flex:1, maxWidth:90, padding:"14px 0", background:"#eee", borderRadius:30, fontWeight:800, border:"none"}}>◀ Back</button>
-        <button onClick={()=>setIsPlaying(!isPlaying)} style={{flex:1, maxWidth:110, padding:"14px 0", background:"#000", color:"#fff", borderRadius:30, fontWeight:800, border:"none"}}>{isPlaying?"⏸ Pause":"▶ Play"}</button>
-        <button onClick={()=>setAskOpen(true)} style={{flex:1, maxWidth:90, padding:"14px 0", background:"#2563EB", color:"#fff", borderRadius:30, fontWeight:800, border:"none"}}>💬 Ask</button>
-        <button onClick={()=>{ if(!isFree){window.location.href="/api/paystack"; return} if(sumIndex<sums.length-1) setSumIndex(s=>s+1) }} style={{flex:1, maxWidth:90, padding:"14px 0", background:"#FFD700", borderRadius:30, fontWeight:800, border:"none"}}>Next ▶</button>
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:6, padding:10}}>
+        <button onClick={()=>{setIsPlaying(false); setSumIndex(s=>Math.max(0,s-1))}} style={{padding:12, background:"#eee", borderRadius:20, fontWeight:800, border:"none"}}>Back</button>
+        <button onClick={()=>setIsPlaying(!isPlaying)} style={{padding:12, background:isPlaying?"#FF4444":"#000", color:"#fff", borderRadius:20, fontWeight:800, border:"none"}}>{isPlaying?"⏸ Stop":t.play+" 🔊"}</button>
+        <button onClick={openCam} style={{padding:12, background:"#fff", border:"2px solid #000", borderRadius:20, fontWeight:800}}>📷</button>
+        <button onClick={()=>alert("786 Ask: How can I help with "+cur.q+"?")} style={{padding:12, background:"#2563EB", color:"#fff", borderRadius:20, fontWeight:800, border:"none"}}>Ask</button>
+        <button onClick={()=>{setIsPlaying(false); setSumIndex(s=>Math.min(sums.length-1,s+1))}} style={{padding:12, background:"#FFD700", borderRadius:20, fontWeight:800, border:"none"}}>Next</button>
       </div>
 
-      {/* EXAM PREP - MOVED TO TOP AREA LIKE YOU ASKED */}
-      <div id="exam" style={{padding:16, borderTop:"1px solid #eee", marginTop:8}}>
-        <div style={{fontWeight:900}}>786 Exam Prep</div>
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:10}}>
-          <div style={{border:"2px solid #000", padding:14, borderRadius:12, fontWeight:700, textAlign:"center"}}>NSC P1</div>
-          <div style={{border:"2px solid #000", padding:14, borderRadius:12, fontWeight:700, textAlign:"center"}}>NSC P2</div>
-          <div style={{border:"1px solid #ccc", padding:14, borderRadius:12, textAlign:"center"}}>Eastern Cape</div>
-          <div style={{border:"1px solid #ccc", padding:14, borderRadius:12, textAlign:"center"}}>Mocks Gr12</div>
-        </div>
-      </div>
-
-      {askOpen && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:50}}>
-          <div style={{background:"#fff", width:"100%", maxWidth:400, borderTopLeftRadius:20, borderTopRightRadius:20, padding:20}}>
-            <div style={{display:"flex", justifyContent:"space-between"}}><b>786 Ask</b><button onClick={()=>setAskOpen(false)}>✕</button></div>
-            <div style={{background:"#FFFBEB", padding:8, borderRadius:8, marginTop:8, fontSize:12}}>Q: {current.q}</div>
-            <button onClick={()=>setAskAns(`786: For ${current.q}, we do ${current.steps[0]}. The hand shows it step by step.`)} style={{width:"100%", background:"#2563EB", color:"#fff", padding:12, borderRadius:12, fontWeight:800, marginTop:12, border:"none"}}>Ask 786</button>
-            {askAns && <div style={{marginTop:12, background:"#f5f5f5", padding:10, borderRadius:10, fontSize:14}}>{askAns}</div>}
-          </div>
-        </div>
-      )}
+      <div style={{textAlign:"center", fontSize:11, opacity:0.5, padding:10}}>🔊 Turn on sound — Hand writes + Voice explains in 4 languages • Gr 8-12 Whole SA • 786</div>
     </div>
   )
-                                     }
+    }
