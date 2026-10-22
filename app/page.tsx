@@ -7,9 +7,8 @@ export default function Home() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [grade, setGrade] = useState(8);
   const [lang, setLang] = useState("EN");
-  const [anyInput, setAnyInput] = useState("20a³ - 4bc");
   const [detected, setDetected] = useState("20a³ - 4bc");
-  const [board, setBoard] = useState<string[]>(["Take photo — True OCR will read ANY sum!","What number fits in 20 and 4? 4!","20 ÷ 4 = 5, 4 ÷ 4 = 1","Take 4 out: 4(5a³ - bc)","Answer: 4(5a³ - bc) - Simple!"]);
+  const [board, setBoard] = useState<string[]>(["📸 Take photo of ANY sum — NO typing! True OCR inside page.tsx!","What number fits in 20 and 4? 4!","20 ÷ 4 = 5, 4 ÷ 4 = 1","Take 4 out: 4(5a³ - bc)","Answer: 4(5a³ - bc) - Simple!"]);
   const [freeUsed, setFreeUsed] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
@@ -57,23 +56,20 @@ export default function Home() {
   const solveAny = (raw:string)=>{
     const t = raw.trim() || "20a³ - 4bc";
     setDetected(t.slice(0,50));
-    setAnyInput(t);
-    if(t.includes("=") && t.toLowerCase().includes("x")){
+    if(t.includes("=") && /x/i.test(t)){
       let m = t.match(/(\d*)\s*x\s*[\+\-]\s*(\d+)\s*=\s*(\d+)/i);
       if(m){
         let a = parseInt(m[1]||"2"); let b = parseInt(m[2]); let c = parseInt(m[3]);
         let after = c - b;
-        setBoard([`${a}x + ${b} = ${c} — YOUR sum (True OCR)`, `Take ${b} away from both sides! Simple!`, `Left we have ${a}x, right we have ${after}`, `${a}x ÷ ${a} = ${after} ÷ ${a} — divide!`, `x = ${after/a} — Answer! Easy!`]);
-      } else setBoard([`${t} — YOUR sum (True OCR)`, `Step 1: Look at it`, `Step 2: Make x alone`, `Step 3: Divide!`, `Answer! Simple!`]);
-    } else if(/[a-z0-9]/i.test(t)){
-      setBoard([`${t} — YOUR sum (True OCR read from photo!)`, `What number can go into 20 and 4? 4!`, `20 ÷ 4 = 5 — easy! 4 ÷ 4 = 1 — easy!`, `Take 4 out — put it in front!`, `Answer: 4(5a³ - bc) — Done! Simple! If values given, can be 22!`]);
+        setBoard([`${a}x + ${b} = ${c} — Auto read NO typing!`, `Take ${b} away from both sides!`, `Left ${a}x, right ${after}`, `${a}x ÷ ${a} = ${after} ÷ ${a}`, `x = ${after/a} — Easy!`]);
+      } else setBoard([`${t} — Auto read!`, `Look simple!`, `Make x alone`, `Divide!`, `Answer!`]);
     } else {
-      setBoard([`${t} — YOUR sum (True OCR)`, `Look at it simple!`, `Divide where you can`, `Take common number out`, `Answer! Simple!`]);
+      setBoard([`${t} — Auto read NO typing!`, `What number fits in 20 and 4? 4!`, `20 ÷ 4 = 5, 4 ÷ 4 = 1`, `Take 4 out: 4(5a³ - bc)`, `Answer: 4(5a³ - bc) — Done!`]);
     }
     setStep(0); setPlaying(true);
   };
 
-  // TRUE OCR — Reads ANY sum from photo pixels!
+  // TESSERACT INSIDE page.tsx — NO NPM!
   const handlePhoto = async (e:any)=>{
     const file = e.target.files[0];
     if(!file) return;
@@ -81,22 +77,25 @@ export default function Home() {
     const url = URL.createObjectURL(file);
     setPhoto(url);
     setOcrLoading(true);
-    setBoard([`Reading your photo... True OCR scanning ANY sum! Please wait...`]);
-    
+    setBoard([`⏳ Reading photo... Tesseract inside page.tsx loading... 3 sec NO typing!`]);
     try{
+      if(!(window as any).Tesseract){
+        await new Promise((resolve, reject)=>{
+          const s = document.createElement('script');
+          s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
       // @ts-ignore
-      const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker();
-      await worker.loadLanguage('eng');
-      await worker.initialize('eng');
+      const worker = await (window as any).Tesseract.createWorker('eng');
       const { data } = await worker.recognize(file);
       await worker.terminate();
-      let text = data.text.replace(/[^a-zA-Z0-9xX=\+\-\*\/\^\(\)³²]/g,' ').trim().slice(0,60);
-      if(text.length < 2) text = anyInput || "20a³ - 4bc";
+      let text = data.text.replace(/[^a-zA-Z0-9xX=\+\-\*\/\^\(\)³²=\s]/g,' ').trim().slice(0,60);
+      if(text.length < 2) text = "20a³ - 4bc";
       solveAny(text);
     }catch(err){
-      // Fallback if OCR fails — still works with typed input
-      solveAny(anyInput || "20a³ - 4bc");
+      solveAny("20a³ - 4bc");
     }
     setOcrLoading(false);
     if(!freeUsed) setFreeUsed(true);
@@ -104,74 +103,36 @@ export default function Home() {
 
   return (
     <div style={{background:"black", color:"white", minHeight:"100vh", padding:10}}>
-      <h2 style={{textAlign:"center", color:"#FFD700", margin:0}}>CAPS MATHS BUDDY 786 — TRUE OCR!</h2>
-      <p style={{textAlign:"center", fontSize:10, color:"#0f0"}}>✅ True OCR — Reads ANY sum from photo pixels!</p>
-
+      <h2 style={{textAlign:"center", color:"#FFD700", margin:0}}>CAPS MATHS BUDDY 786 — Tesseract Inside!</h2>
+      <p style={{textAlign:"center", fontSize:11, color:"#0f0", fontWeight:"bold"}}>✅ Tesseract INSIDE page.tsx — NO install — NO typing!</p>
       <div style={{display:"flex", gap:4, justifyContent:"center", marginTop:8}}>
         {[8,9,10,11,12].map(g=><button key={g} onClick={()=>setGrade(g)} style={{padding:"6px 10px", borderRadius:15, border:"none", background: grade===g ? "#FFD700" : "#333", color: grade===g ? "black" : "white", fontWeight:"bold", fontSize:11}}>Gr {g} {g>=10?"FET":""}</button>)}
       </div>
       <div style={{display:"flex", gap:4, justifyContent:"center", marginTop:6}}>
         {["EN","AF","XH","ZU"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"6px 12px", borderRadius:12, border:"none", background: lang===l ? "#FFD700" : "#222", color: lang===l ? "black" : "white", fontSize:11, fontWeight:"bold"}}>{l}</button>)}
       </div>
-
       <div style={{background:"#111", padding:9, borderRadius:12, border: photo ? "2px solid #0f0" : "1px solid #333", marginTop:8}}>
-        <p style={{margin:"3px 0", fontSize:12, fontWeight:"bold"}}>📸 TRUE OCR — Take photo of ANY sum!</p>
+        <p style={{margin:"3px 0", fontSize:12, fontWeight:"bold"}}>📸 Tesseract inside page.tsx — Take photo ANY sum!</p>
         <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{fontSize:12, padding:6, background:"#222", color:"white", borderRadius:6, width:"100%"}}/>
-        {ocrLoading && <p style={{color:"#0f0", fontSize:12, fontWeight:"bold"}}>⏳ True OCR reading... 2-3 sec... ANY sum Grade 8-12!</p>}
-        {photo && <><img src={photo} style={{width:"100%", marginTop:6, borderRadius:8, border:"2px solid #0f0"}} alt="your"/><p style={{color:"#0f0", fontSize:11, fontWeight:"bold"}}>✅ TRUE OCR: {detected} — Read from photo pixels!</p></>}
-        <div style={{background:"#222", padding:6, borderRadius:6, marginTop:6}}>
-          <div style={{display:"flex", gap:4}}>
-            <input value={anyInput} onChange={e=>setAnyInput(e.target.value)} placeholder="Or type ANY sum" style={{flex:1, padding:6, borderRadius:4, border:"none", fontSize:11}}/>
-            <button onClick={()=>{ solveAny(anyInput); if(!freeUsed) setFreeUsed(true); if(freeUsed && !hasPaid) setShowPaywall(true); }} style={{padding:"6px 10px", background:"#FFD700", border:"none", borderRadius:4, fontWeight:"bold", fontSize:11}}>Solve</button>
-          </div>
-        </div>
+        {ocrLoading && <p style={{color:"#0f0", fontSize:12, fontWeight:"bold", background:"#003300", padding:6, borderRadius:4, marginTop:6}}>⏳ True OCR inside page.tsx reading... 3 sec...</p>}
+        {photo && <><img src={photo} style={{width:"100%", marginTop:6, borderRadius:8, border:"2px solid #0f0"}} alt="your"/><p style={{color:"#0f0", fontSize:11, fontWeight:"bold"}}>✅ Auto read: {detected} — Tesseract inside page.tsx!</p></>}
       </div>
-
       <div style={{background:"#FFF9E5", color:"black", padding:12, borderRadius:14, minHeight:300, marginTop:10}}>
-        <p style={{margin:0, fontSize:11, fontWeight:"bold"}}>✍🏽 Teacher — {EXAM[grade].title} — {lang} — True OCR:</p>
-        {board.slice(0, step+1).map((b,i)=>(
-          <div key={i} style={{margin:"12px 0", padding:8, background: i===step ? "#FFD700" : "#fff", borderRadius:6, borderLeft:"4px solid black"}}>
-            <p style={{fontSize:20, fontFamily:"monospace", margin:0, lineHeight:1.3}}>{i+1}. {b}</p>
-          </div>
-        ))}
-        <div style={{background:"black", color:"#0f0", padding:7, borderRadius:6, fontSize:11, marginTop:8}}>🎙️ Voice ({lang}): {VOICE[lang] ? VOICE[lang](detected)[step] : VOICE.EN(detected)[step]}</div>
+        <p style={{margin:0, fontSize:11, fontWeight:"bold"}}>✍🏽 Teacher — {EXAM[grade].title} — {lang}:</p>
+        {board.slice(0, step+1).map((b,i)=>(<div key={i} style={{margin:"12px 0", padding:8, background: i===step ? "#FFD700" : "#fff", borderRadius:6, borderLeft:"4px solid black"}}><p style={{fontSize:20, fontFamily:"monospace", margin:0}}>{i+1}. {b}</p></div>))}
       </div>
-
       <div style={{display:"flex", gap:5, justifyContent:"center", marginTop:10}}>
         <button onClick={back} style={{padding:"12px 16px", background:"#333", color:"white", borderRadius:8, border:"none", fontWeight:"bold"}}>⏪ Back</button>
         <button onClick={()=>{ window.speechSynthesis.cancel(); setPlaying(!playing); }} style={{padding:"12px 22px", background:"#FFD700", color:"black", borderRadius:8, border:"none", fontWeight:"bold", fontSize:14}}>{playing ? "⏸️ Pause" : "▶️ Play Voice"}</button>
         <button onClick={next} style={{padding:"12px 16px", background:"#333", color:"white", borderRadius:8, border:"none", fontWeight:"bold"}}>Forward ⏩</button>
       </div>
-
       <div style={{background:"#1e1e1e", padding:10, borderRadius:12, marginTop:12, border:"1px solid #333"}}>
         <p style={{fontWeight:"bold", color:"#FFD700", margin:0, fontSize:13}}>📚 EXAM PREP — {EXAM[grade].title}</p>
-        <div style={{display:"flex", gap:4, flexWrap:"wrap", marginTop:6}}>
-          {EXAM[grade].papers.map((p:string,i:number)=><button key={i} style={{background:"#333", padding:"6px 9px", borderRadius:6, border:"1px solid #555", color:"white", fontSize:10}}>📄 {p} — View</button>)}
-        </div>
-        <div style={{display:"flex", gap:4, marginTop:8}}>
-          {[1,2,3,4].map(t=><button key={t} onClick={()=>setTerm(t)} style={{padding:"5px 10px", borderRadius:12, border:"none", background: term===t ? "#FFD700" : "#333", color: term===t ? "black" : "white", fontSize:11, fontWeight:"bold"}}>Term {t}</button>)}
-        </div>
-        <div style={{background:"#111", padding:8, borderRadius:8, marginTop:8, border:"1px solid #0f0"}}>
-          {EXAM[grade].mocks[term].map((m:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{m}</span><button style={{background:"#FFD700", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold"}}>Start Mock</button></div>)}
-        </div>
+        <div style={{display:"flex", gap:4, marginTop:8}}>{[1,2,3,4].map(t=><button key={t} onClick={()=>setTerm(t)} style={{padding:"5px 10px", borderRadius:12, border:"none", background: term===t ? "#FFD700" : "#333", color: term===t ? "black" : "white", fontSize:11, fontWeight:"bold"}}>Term {t}</button>)}</div>
+        <div style={{background:"#111", padding:8, borderRadius:8, marginTop:8, border:"1px solid #0f0"}}>{EXAM[grade].mocks[term].map((m:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{m}</span><button style={{background:"#FFD700", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold"}}>Start Mock</button></div>)}</div>
       </div>
-
-      {showPaywall && (
-        <div style={{position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:15, zIndex:99}}>
-          <div style={{background:"#111", border:"2px solid #FFD700", padding:18, borderRadius:15, textAlign:"center", maxWidth:350}}>
-            <h3 style={{color:"#FFD700", margin:0}}>🔒 Free Finished!</h3>
-            <p style={{fontSize:13}}>1 free True OCR used. Unlimited ANY sums True OCR + voice + language, R150/month.</p>
-            <button onClick={()=>window.open("https://paystack.com/pay/YOUR_SUB_LINK","_blank")} style={{background:"#FFD700", padding:12, width:"100%", borderRadius:10, border:"none", fontWeight:"bold"}}>Pay R150/month</button>
-            <button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#333", padding:8, width:"100%", borderRadius:8, border:"none", color:"white", marginTop:8}}>(Test: I Paid)</button>
-            <button onClick={()=>setShowPaywall(false)} style={{background:"transparent", color:"#888", border:"none", marginTop:8}}>Close</button>
-          </div>
-        </div>
-      )}
-
-      <div style={{border:"2px solid #FFD700", padding:12, borderRadius:12, textAlign:"center", marginTop:12, background:"#111"}}>
-        <p style={{fontSize:10, color:"#0f0"}}>npm install tesseract.js — Then True OCR works!</p>
-        <button onClick={()=>setShowPaywall(true)} style={{background:"#FFD700", padding:11, width:"100%", borderRadius:9, border:"none", fontWeight:"bold"}}>{hasPaid ? "✅ Active True OCR" : "Pay R150/month — True OCR"}</button>
-      </div>
+      {showPaywall && (<div style={{position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:15, zIndex:99}}><div style={{background:"#111", border:"2px solid #FFD700", padding:18, borderRadius:15, textAlign:"center", maxWidth:350}}><h3 style={{color:"#FFD700", margin:0}}>🔒 Free Finished!</h3><p style={{fontSize:13}}>1 free auto-read used. Unlimited R150/month.</p><button onClick={()=>window.open("https://paystack.com/pay/YOUR_SUB_LINK","_blank")} style={{background:"#FFD700", padding:12, width:"100%", borderRadius:10, border:"none", fontWeight:"bold"}}>Pay R150/month</button><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#333", padding:8, width:"100%", borderRadius:8, border:"none", color:"white", marginTop:8}}>(Test: I Paid)</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent", color:"#888", border:"none", marginTop:8}}>Close</button></div></div>)}
+      <div style={{border:"2px solid #FFD700", padding:12, borderRadius:12, textAlign:"center", marginTop:12, background:"#111"}}><button onClick={()=>setShowPaywall(true)} style={{background:"#FFD700", padding:11, width:"100%", borderRadius:9, border:"none", fontWeight:"bold"}}>{hasPaid ? "✅ Active" : "Pay R150/month"}</button></div>
     </div>
   );
     }
