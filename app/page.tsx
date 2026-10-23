@@ -69,7 +69,6 @@ export default function Home() {
     setStep(0); setPlaying(true);
   };
 
-  // TESSERACT INSIDE page.tsx — NO NPM!
   const handlePhoto = async (e:any)=>{
     const file = e.target.files[0];
     if(!file) return;
@@ -133,6 +132,19 @@ export default function Home() {
       </div>
       {showPaywall && (<div style={{position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:15, zIndex:99}}><div style={{background:"#111", border:"2px solid #FFD700", padding:18, borderRadius:15, textAlign:"center", maxWidth:350}}><h3 style={{color:"#FFD700", margin:0}}>🔒 Free Finished!</h3><p style={{fontSize:13}}>1 free auto-read used. Unlimited R150/month.</p><button onClick={()=>window.open("https://paystack.com/pay/YOUR_SUB_LINK","_blank")} style={{background:"#FFD700", padding:12, width:"100%", borderRadius:10, border:"none", fontWeight:"bold"}}>Pay R150/month</button><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#333", padding:8, width:"100%", borderRadius:8, border:"none", color:"white", marginTop:8}}>(Test: I Paid)</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent", color:"#888", border:"none", marginTop:8}}>Close</button></div></div>)}
       <div style={{border:"2px solid #FFD700", padding:12, borderRadius:12, textAlign:"center", marginTop:12, background:"#111"}}><button onClick={()=>setShowPaywall(true)} style={{background:"#FFD700", padding:11, width:"100%", borderRadius:9, border:"none", fontWeight:"bold"}}>{hasPaid ? "✅ Active" : "Pay R150/month"}</button></div>
+
+      {/* === ADDED: ASK TEACHER + FOOTER === */}
+      <a href="https://wa.me/27738507695" target="_blank" style={{position:'fixed', bottom:'20px', right:'20px', background:'#25D366', color:'white', padding:'14px 22px', borderRadius:'30px', fontWeight:'bold', zIndex:9999, textDecoration:'none'}}>💬 Ask Teacher</a>
+
+      <footer style={{marginTop:'30px', padding:'25px 15px', background:'#0f0f0f', textAlign:'center', borderTop:'1px solid #333', borderRadius:'12px'}}>
+        <div style={{display:'flex', justifyContent:'center', gap:'15px', flexWrap:'wrap', marginBottom:'10px'}}>
+          <a href="/pricing" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Pricing</a>
+          <a href="/refund" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Refund</a>
+          <a href="/cancellation" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Cancellation</a>
+          <a href="/terms" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Terms</a>
+        </div>
+        <p style={{color:'#666', fontSize:'11px'}}>R150/month • raeezgeswind5@gmail.com • South Africa • Paystack</p>
+      </footer>
     </div>
   );
     }
