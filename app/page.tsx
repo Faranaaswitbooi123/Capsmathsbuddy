@@ -14,6 +14,9 @@ export default function Home() {
   const [hasPaid, setHasPaid] = useState(false);
   const [term, setTerm] = useState(3);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [showAsk, setShowAsk] = useState(false);
+  const [q, setQ] = useState("");
+  const [chat, setChat] = useState<{q:string,a:string}[]>([]);
   const ref = useRef<any>(null);
 
   const EXAM: any = {
@@ -40,45 +43,67 @@ export default function Home() {
     return ()=> clearInterval(ref.current);
   },[playing, board]);
 
+  const speakCalm = (text:string)=>{
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.82; u.pitch = 0.95; u.volume = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    if(voices.length>0){
+      let best = voices.find(v=> v.name.includes('Google') && v.lang.startsWith('en')) 
+              || voices.find(v=> v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Karen'))
+              || voices.find(v=> v.lang === 'en-ZA')
+              || voices.find(v=> v.lang.startsWith('en'));
+      if(best) u.voice = best;
+    }
+    if(lang==="AF") u.lang="af-ZA"; else if(lang==="XH") u.lang="xh-ZA"; else if(lang==="ZU") u.lang="zu-ZA"; else u.lang="en-ZA";
+    window.speechSynthesis.speak(u);
+  };
+
   useEffect(()=>{
     if(board.length>0 && 'speechSynthesis' in window){
-      window.speechSynthesis.cancel();
-      setTimeout(()=>{
-        const list = VOICE[lang] ? VOICE[lang](detected) : VOICE.EN(detected);
-        const u = new SpeechSynthesisUtterance(list[step] || list[0]);
-        // CALMER MORE REALISTIC VOICE
-        u.rate = 0.82;
-        u.pitch = 0.95;
-        u.volume = 0.9;
-        // pick nicest voice available
-        const voices = window.speechSynthesis.getVoices();
-        if(voices.length>0){
-          let best = voices.find(v=> v.name.includes('Google') && v.lang.startsWith('en')) 
-                  || voices.find(v=> v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Karen'))
-                  || voices.find(v=> v.lang === 'en-ZA')
-                  || voices.find(v=> v.lang.startsWith('en'));
-          if(best) u.voice = best;
-        }
-        if(lang==="AF") u.lang="af-ZA"; else if(lang==="XH") u.lang="xh-ZA"; else if(lang==="ZU") u.lang="zu-ZA"; else u.lang="en-ZA";
-        window.speechSynthesis.speak(u);
-      },200);
+      const list = VOICE[lang] ? VOICE[lang](detected) : VOICE.EN(detected);
+      speakCalm(list[step] || list[0]);
     }
   },[step, detected, lang, board]);
 
   const solveAny = (raw:string)=>{
     const t = raw.trim() || "20a³ - 4bc";
-    setDetected(t.slice(0,50));
+    setDetected(t.slice(0,60));
     if(t.includes("=") && /x/i.test(t)){
       let m = t.match(/(\d*)\s*x\s*[\+\-]\s*(\d+)\s*=\s*(\d+)/i);
       if(m){
         let a = parseInt(m[1]||"2"); let b = parseInt(m[2]); let c = parseInt(m[3]);
         let after = c - b;
-        setBoard([`${a}x + ${b} = ${c} — Auto read NO typing!`, `Take ${b} away from both sides!`, `Left ${a}x, right ${after}`, `${a}x ÷ ${a} = ${after} ÷ ${a}`, `x = ${after/a} — Easy!`]);
+        setBoard([`${a}x + ${b} = ${c} — Auto read!`, `Take ${b} away from both sides!`, `Left ${a}x, right ${after}`, `${a}x ÷ ${a} = ${after} ÷ ${a}`, `x = ${after/a} — Easy!`]);
       } else setBoard([`${t} — Auto read!`, `Look simple!`, `Make x alone`, `Divide!`, `Answer!`]);
     } else {
-      setBoard([`${t} — Auto read NO typing!`, `What number fits in 20 and 4? 4!`, `20 ÷ 4 = 5, 4 ÷ 4 = 1`, `Take 4 out: 4(5a³ - bc)`, `Answer: 4(5a³ - bc) — Done!`]);
+      let nums = t.match(/\d+/g);
+      if(nums && nums.length>=2){
+        let n1 = parseInt(nums[0]); let n2 = parseInt(nums[1]);
+        let gcd = 1; for(let i=Math.min(n1,n2); i>=2; i--){ if(n1%i===0 && n2%i===0){ gcd=i; break; } }
+        setBoard([`${t} — Auto read from photo!`, `What number fits in ${n1} and ${n2}? ${gcd}!`, `${n1} ÷ ${gcd} = ${n1/gcd}, ${n2} ÷ ${gcd} = ${n2/gcd}`, `Take ${gcd} out: ${gcd}(${n1/gcd}... - ...)`, `Answer: ${gcd}(...) — Done!`]);
+      } else {
+        setBoard([`${t} — Auto read from photo!`, `What number fits in 20 and 4? 4!`, `20 ÷ 4 = 5, 4 ÷ 4 = 1`, `Take 4 out: 4(5a³ - bc)`, `Answer: 4(5a³ - bc) — Done!`]);
+      }
     }
     setStep(0); setPlaying(true);
+  };
+
+  const askTeacher = ()=>{
+    if(!q.trim()) return;
+    let lower = q.toLowerCase();
+    let answer = "";
+    if(lower.includes("don't understand") || lower.includes("step") || lower.includes("explain")){
+      answer = `No problem! Let's look again at step ${step+1}. ${board[step]}. For ${detected}, we are looking for what is common.`;
+    } else if(lower.includes("why") && (lower.includes("4") || lower.includes("divide"))){
+      answer = `Good question! We divide because we want to make it smaller. For ${detected}, we look for common number.`;
+    } else {
+      answer = `Great question about ${detected}! On step ${step+1}, ${board[step]}. Click Back or Forward to review.`;
+    }
+    setChat(prev=>[...prev, {q:q, a:answer}]);
+    speakCalm(answer);
+    setQ("");
   };
 
   const handlePhoto = async (e:any)=>{
@@ -88,25 +113,27 @@ export default function Home() {
     const url = URL.createObjectURL(file);
     setPhoto(url);
     setOcrLoading(true);
-    setBoard([`⏳ Reading photo... Tesseract inside page.tsx loading... 3 sec NO typing!`]);
+    setBoard([`⏳ Reading YOUR photo... 4 seconds...`]);
     try{
       if(!(window as any).Tesseract){
         await new Promise((resolve, reject)=>{
           const s = document.createElement('script');
           s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-          s.onload = resolve; s.onerror = reject;
+          s.onload = ()=> resolve(true); s.onerror = reject;
           document.head.appendChild(s);
         });
       }
-      // @ts-ignore
-      const worker = await (window as any).Tesseract.createWorker('eng');
-      const { data } = await worker.recognize(file);
-      await worker.terminate();
-      let text = data.text.replace(/[^a-zA-Z0-9xX=\+\-\*\/\^\(\)³²=\s]/g,' ').trim().slice(0,60);
-      if(text.length < 2) text = "20a³ - 4bc";
-      solveAny(text);
+      const result = await (window as any).Tesseract.recognize(file, 'eng');
+      let rawText = result.data.text || "";
+      let cleaned = rawText.trim().replace(/\n/g,' ').replace(/\s+/g,' ').slice(0,80).trim();
+      if(!cleaned || cleaned.length < 1){
+        setBoard([`⚠️ Could not read clearly - try closer photo!`]);
+        setOcrLoading(false);
+        return;
+      }
+      solveAny(cleaned);
     }catch(err){
-      solveAny("20a³ - 4bc");
+      setBoard([`⚠️ OCR error - try clearer photo!`]);
     }
     setOcrLoading(false);
     if(!freeUsed) setFreeUsed(true);
@@ -118,51 +145,4 @@ export default function Home() {
       <p style={{textAlign:"center", fontSize:11, color:"#0f0", fontWeight:"bold"}}>✅ Tesseract INSIDE page.tsx — NO install — NO typing!</p>
       <div style={{display:"flex", gap:4, justifyContent:"center", marginTop:8}}>
         {[8,9,10,11,12].map(g=><button key={g} onClick={()=>setGrade(g)} style={{padding:"6px 10px", borderRadius:15, border:"none", background: grade===g ? "#FFD700" : "#333", color: grade===g ? "black" : "white", fontWeight:"bold", fontSize:11}}>Gr {g} {g>=10?"FET":""}</button>)}
-      </div>
-      <div style={{display:"flex", gap:4, justifyContent:"center", marginTop:6}}>
-        {["EN","AF","XH","ZU"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"6px 12px", borderRadius:12, border:"none", background: lang===l ? "#FFD700" : "#222", color: lang===l ? "black" : "white", fontSize:11, fontWeight:"bold"}}>{l}</button>)}
-      </div>
-      <div style={{background:"#111", padding:9, borderRadius:12, border: photo ? "2px solid #0f0" : "1px solid #333", marginTop:8}}>
-        <p style={{margin:"3px 0", fontSize:12, fontWeight:"bold"}}>📸 Tesseract inside page.tsx — Take photo ANY sum!</p>
-        <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{fontSize:12, padding:6, background:"#222", color:"white", borderRadius:6, width:"100%"}}/>
-        {ocrLoading && <p style={{color:"#0f0", fontSize:12, fontWeight:"bold", background:"#003300", padding:6, borderRadius:4, marginTop:6}}>⏳ True OCR inside page.tsx reading... 3 sec...</p>}
-        {photo && <><img src={photo} style={{width:"100%", marginTop:6, borderRadius:8, border:"2px solid #0f0"}} alt="your"/><p style={{color:"#0f0", fontSize:11, fontWeight:"bold"}}>✅ Auto read: {detected} — Tesseract inside page.tsx!</p></>}
-      </div>
-      <div style={{background:"#FFF9E5", color:"black", padding:12, borderRadius:14, minHeight:300, marginTop:10}}>
-        <p style={{margin:0, fontSize:11, fontWeight:"bold"}}>✍🏽 Teacher — {EXAM[grade].title} — {lang}:</p>
-        {board.slice(0, step+1).map((b,i)=>(<div key={i} style={{margin:"12px 0", padding:8, background: i===step ? "#FFD700" : "#fff", borderRadius:6, borderLeft:"4px solid black"}}><p style={{fontSize:20, fontFamily:"monospace", margin:0}}>{i+1}. {b}</p></div>))}
-      </div>
-      <div style={{display:"flex", gap:5, justifyContent:"center", marginTop:10}}>
-        <button onClick={back} style={{padding:"12px 16px", background:"#333", color:"white", borderRadius:8, border:"none", fontWeight:"bold"}}>⏪ Back</button>
-        <button onClick={()=>{ window.speechSynthesis.cancel(); setPlaying(!playing); }} style={{padding:"12px 22px", background:"#FFD700", color:"black", borderRadius:8, border:"none", fontWeight:"bold", fontSize:14}}>{playing ? "⏸️ Pause" : "▶️ Play Voice"}</button>
-        <button onClick={next} style={{padding:"12px 16px", background:"#333", color:"white", borderRadius:8, border:"none", fontWeight:"bold"}}>Forward ⏩</button>
-      </div>
-      <div style={{background:"#1e1e1e", padding:10, borderRadius:12, marginTop:12, border:"1px solid #333"}}>
-        <p style={{fontWeight:"bold", color:"#FFD700", margin:0, fontSize:13}}>📚 EXAM PREP — {EXAM[grade].title}</p>
-        
-        {/* PAST PAPERS NOW VISIBLE - ADDED */}
-        <p style={{fontSize:11, color:"#0f0", fontWeight:"bold", margin:"10px 0 4px 0"}}>📄 PAST PAPERS (CAPS):</p>
-        <div style={{background:"#111", padding:8, borderRadius:8, border:"1px solid #444"}}>
-          {EXAM[grade].papers.map((p:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{p}</span><button style={{background:"#0f0", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold", color:"black"}}>Open</button></div>)}
-        </div>
-
-        <div style={{display:"flex", gap:4, marginTop:10}}>{[1,2,3,4].map(t=><button key={t} onClick={()=>setTerm(t)} style={{padding:"5px 10px", borderRadius:12, border:"none", background: term===t ? "#FFD700" : "#333", color: term===t ? "black" : "white", fontSize:11, fontWeight:"bold"}}>Term {t}</button>)}</div>
-        <div style={{background:"#111", padding:8, borderRadius:8, marginTop:8, border:"1px solid #0f0"}}>{EXAM[grade].mocks[term].map((m:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{m}</span><button style={{background:"#FFD700", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold"}}>Start Mock</button></div>)}</div>
-      </div>
-      {showPaywall && (<div style={{position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:15, zIndex:99}}><div style={{background:"#111", border:"2px solid #FFD700", padding:18, borderRadius:15, textAlign:"center", maxWidth:350}}><h3 style={{color:"#FFD700", margin:0}}>🔒 Free Finished!</h3><p style={{fontSize:13}}>1 free auto-read used. Unlimited R150/month.</p><button onClick={()=>window.open("https://paystack.com/pay/YOUR_SUB_LINK","_blank")} style={{background:"#FFD700", padding:12, width:"100%", borderRadius:10, border:"none", fontWeight:"bold"}}>Pay R150/month</button><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#333", padding:8, width:"100%", borderRadius:8, border:"none", color:"white", marginTop:8}}>(Test: I Paid)</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent", color:"#888", border:"none", marginTop:8}}>Close</button></div></div>)}
-      <div style={{border:"2px solid #FFD700", padding:12, borderRadius:12, textAlign:"center", marginTop:12, background:"#111"}}><button onClick={()=>setShowPaywall(true)} style={{background:"#FFD700", padding:11, width:"100%", borderRadius:9, border:"none", fontWeight:"bold"}}>{hasPaid ? "✅ Active" : "Pay R150/month"}</button></div>
-
-      <a href="https://wa.me/27738507695" target="_blank" style={{position:'fixed', bottom:'20px', right:'20px', background:'#25D366', color:'white', padding:'14px 22px', borderRadius:'30px', fontWeight:'bold', zIndex:9999, textDecoration:'none'}}>💬 Ask Teacher</a>
-
-      <footer style={{marginTop:'30px', padding:'25px 15px', background:'#0f0f0f', textAlign:'center', borderTop:'1px solid #333', borderRadius:'12px'}}>
-        <div style={{display:'flex', justifyContent:'center', gap:'15px', flexWrap:'wrap', marginBottom:'10px'}}>
-          <a href="/pricing" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Pricing</a>
-          <a href="/refund" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Refund</a>
-          <a href="/cancellation" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Cancellation</a>
-          <a href="/terms" style={{color:'#FFD700', textDecoration:'none', fontWeight:'bold', fontSize:'13px'}}>Terms</a>
-        </div>
-        <p style={{color:'#666', fontSize:'11px'}}>R150/month • raeezgeswind5@gmail.com • South Africa • Paystack</p>
-      </footer>
-    </div>
-  );
-}
+      </div
