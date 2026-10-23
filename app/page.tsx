@@ -17,11 +17,11 @@ export default function Home() {
   const ref = useRef<any>(null);
 
   const EXAM: any = {
-    8:{title:"Grade 8 CAPS Senior", papers:["Nov 2023 Gr8","June 2024 Gr8"], mocks:{1:["Term 1 ANY (50)"],2:["Term 2 ANY (50)"],3:["Term 3 ANY (50)"],4:["Term 4 Final (100)"]}},
-    9:{title:"Grade 9 CAPS Senior", papers:["Nov 2023 Gr9","June 2024 Gr9"], mocks:{1:["Term 1 ANY (50)"],2:["Term 2 ANY (50)"],3:["Term 3 ANY (50)"],4:["Term 4 ANY (150)"]}},
-    10:{title:"Grade 10 CAPS FET", papers:["DBE P1","P2 + Memo"], mocks:{1:["Term 1 ANY (100)"],2:["Term 2 ANY (100)"],3:["Term 3 ANY (100)"],4:["Term 4 P1 (150) P2 (150)"]}},
-    11:{title:"Grade 11 CAPS FET", papers:["DBE P1","P2 + Memo"], mocks:{1:["Term 1 ANY (75)"],2:["Term 2 ANY (100)"],3:["Term 3 ANY (100)"],4:["Term 4 P1 (150)"]}},
-    12:{title:"Grade 12 CAPS FET Matric", papers:["NSC 2023 P1 Memo","P2 Memo"], mocks:{1:["Term 1 ANY (150)"],2:["Term 2 ANY (300)"],3:["Term 3 Trial (150)"],4:["Term 4 Final (150)"]}},
+    8:{title:"Grade 8 CAPS Senior", papers:["Nov 2023 Gr8 - Paper 1","June 2024 Gr8 - Paper 2","Nov 2023 Memo"], mocks:{1:["Term 1 ANY (50)"],2:["Term 2 ANY (50)"],3:["Term 3 ANY (50)"],4:["Term 4 Final (100)"]}},
+    9:{title:"Grade 9 CAPS Senior", papers:["Nov 2023 Gr9 - Paper 1","June 2024 Gr9 - Paper 2","Nov 2023 Memo"], mocks:{1:["Term 1 ANY (50)"],2:["Term 2 ANY (50)"],3:["Term 3 ANY (50)"],4:["Term 4 ANY (150)"]}},
+    10:{title:"Grade 10 CAPS FET", papers:["DBE P1 2023","DBE P2 2023 + Memo","June 2024 P1"], mocks:{1:["Term 1 ANY (100)"],2:["Term 2 ANY (100)"],3:["Term 3 ANY (100)"],4:["Term 4 P1 (150) P2 (150)"]}},
+    11:{title:"Grade 11 CAPS FET", papers:["DBE P1 2023","DBE P2 2023 + Memo","Nov 2023 Memo"], mocks:{1:["Term 1 ANY (75)"],2:["Term 2 ANY (100)"],3:["Term 3 ANY (100)"],4:["Term 4 P1 (150)"]}},
+    12:{title:"Grade 12 CAPS FET Matric", papers:["NSC 2023 P1 + Memo","NSC 2023 P2 + Memo","NSC 2024 P1 Trial"], mocks:{1:["Term 1 ANY (150)"],2:["Term 2 ANY (300)"],3:["Term 3 Trial (150)"],4:["Term 4 Final (150)"]}},
   };
 
   const VOICE: any = {
@@ -46,7 +46,19 @@ export default function Home() {
       setTimeout(()=>{
         const list = VOICE[lang] ? VOICE[lang](detected) : VOICE.EN(detected);
         const u = new SpeechSynthesisUtterance(list[step] || list[0]);
-        u.rate = 0.9;
+        // CALMER MORE REALISTIC VOICE
+        u.rate = 0.82;
+        u.pitch = 0.95;
+        u.volume = 0.9;
+        // pick nicest voice available
+        const voices = window.speechSynthesis.getVoices();
+        if(voices.length>0){
+          let best = voices.find(v=> v.name.includes('Google') && v.lang.startsWith('en')) 
+                  || voices.find(v=> v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Karen'))
+                  || voices.find(v=> v.lang === 'en-ZA')
+                  || voices.find(v=> v.lang.startsWith('en'));
+          if(best) u.voice = best;
+        }
         if(lang==="AF") u.lang="af-ZA"; else if(lang==="XH") u.lang="xh-ZA"; else if(lang==="ZU") u.lang="zu-ZA"; else u.lang="en-ZA";
         window.speechSynthesis.speak(u);
       },200);
@@ -127,13 +139,19 @@ export default function Home() {
       </div>
       <div style={{background:"#1e1e1e", padding:10, borderRadius:12, marginTop:12, border:"1px solid #333"}}>
         <p style={{fontWeight:"bold", color:"#FFD700", margin:0, fontSize:13}}>📚 EXAM PREP — {EXAM[grade].title}</p>
-        <div style={{display:"flex", gap:4, marginTop:8}}>{[1,2,3,4].map(t=><button key={t} onClick={()=>setTerm(t)} style={{padding:"5px 10px", borderRadius:12, border:"none", background: term===t ? "#FFD700" : "#333", color: term===t ? "black" : "white", fontSize:11, fontWeight:"bold"}}>Term {t}</button>)}</div>
+        
+        {/* PAST PAPERS NOW VISIBLE - ADDED */}
+        <p style={{fontSize:11, color:"#0f0", fontWeight:"bold", margin:"10px 0 4px 0"}}>📄 PAST PAPERS (CAPS):</p>
+        <div style={{background:"#111", padding:8, borderRadius:8, border:"1px solid #444"}}>
+          {EXAM[grade].papers.map((p:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{p}</span><button style={{background:"#0f0", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold", color:"black"}}>Open</button></div>)}
+        </div>
+
+        <div style={{display:"flex", gap:4, marginTop:10}}>{[1,2,3,4].map(t=><button key={t} onClick={()=>setTerm(t)} style={{padding:"5px 10px", borderRadius:12, border:"none", background: term===t ? "#FFD700" : "#333", color: term===t ? "black" : "white", fontSize:11, fontWeight:"bold"}}>Term {t}</button>)}</div>
         <div style={{background:"#111", padding:8, borderRadius:8, marginTop:8, border:"1px solid #0f0"}}>{EXAM[grade].mocks[term].map((m:string,i:number)=><div key={i} style={{display:"flex", justifyContent:"space-between", background:"#222", padding:7, borderRadius:5, marginTop:5}}><span style={{fontSize:11}}>{m}</span><button style={{background:"#FFD700", border:"none", padding:"4px 9px", borderRadius:4, fontSize:10, fontWeight:"bold"}}>Start Mock</button></div>)}</div>
       </div>
       {showPaywall && (<div style={{position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:15, zIndex:99}}><div style={{background:"#111", border:"2px solid #FFD700", padding:18, borderRadius:15, textAlign:"center", maxWidth:350}}><h3 style={{color:"#FFD700", margin:0}}>🔒 Free Finished!</h3><p style={{fontSize:13}}>1 free auto-read used. Unlimited R150/month.</p><button onClick={()=>window.open("https://paystack.com/pay/YOUR_SUB_LINK","_blank")} style={{background:"#FFD700", padding:12, width:"100%", borderRadius:10, border:"none", fontWeight:"bold"}}>Pay R150/month</button><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#333", padding:8, width:"100%", borderRadius:8, border:"none", color:"white", marginTop:8}}>(Test: I Paid)</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent", color:"#888", border:"none", marginTop:8}}>Close</button></div></div>)}
       <div style={{border:"2px solid #FFD700", padding:12, borderRadius:12, textAlign:"center", marginTop:12, background:"#111"}}><button onClick={()=>setShowPaywall(true)} style={{background:"#FFD700", padding:11, width:"100%", borderRadius:9, border:"none", fontWeight:"bold"}}>{hasPaid ? "✅ Active" : "Pay R150/month"}</button></div>
 
-      {/* === ADDED: ASK TEACHER + FOOTER === */}
       <a href="https://wa.me/27738507695" target="_blank" style={{position:'fixed', bottom:'20px', right:'20px', background:'#25D366', color:'white', padding:'14px 22px', borderRadius:'30px', fontWeight:'bold', zIndex:9999, textDecoration:'none'}}>💬 Ask Teacher</a>
 
       <footer style={{marginTop:'30px', padding:'25px 15px', background:'#0f0f0f', textAlign:'center', borderTop:'1px solid #333', borderRadius:'12px'}}>
@@ -147,4 +165,4 @@ export default function Home() {
       </footer>
     </div>
   );
-    }
+}
