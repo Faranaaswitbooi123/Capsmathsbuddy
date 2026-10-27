@@ -1,166 +1,152 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-export default function Home(){
-  const [step,setStep]=useState(0); const [playing,setPlaying]=useState(false); const [photo,setPhoto]=useState<string|null>(null);
-  const [grade,setGrade]=useState(8); const [lang,setLang]=useState("EN");
-  const [ocrText,setOcrText]=useState(""); const [ocrLoading,setOcrLoading]=useState(false);
-  const [questionType,setQuestionType]=useState("similar"); // similar or angles
-  const [board,setBoard]=useState<any[]>([
-    {text:"ANY CAMERA ready - Include FULL Question + Diagram in photo!",eq:"Question + Diagram = ANY solved"},
-    {text:"How to: 1. Select type below 2. Start HD camera 3. Include question text at top",eq:"Type: Similar or 2x+3x or ANY"},
-    {text:"Then camera reads ANY",eq:"ANY equation"},
-    {text:"Shows REAL equations",eq:"2x + 3x = 180°\nor\nAB/DE=1/2"},
-    {text:"Works for Exercise 11 and ANY sum",eq:"Ready for ANY"}
-  ]);
-  const [freeUsed,setFreeUsed]=useState(false); const [showPaywall,setShowPaywall]=useState(false); const [hasPaid,setHasPaid]=useState(false);
-  const [showAsk,setShowAsk]=useState(false); const [q,setQ]=useState(""); const [chat,setChat]=useState<{q:string,a:string}[]>([]); const [activeTab,setActiveTab]=useState("solve");
-  const ref=useRef<any>(null); const videoRef=useRef<HTMLVideoElement>(null);
-  const MOCS:any={
-    8:["Exam Prep Mock 1 ANY Similar triangles 45 30 49","Exam Prep Mock 2 Final ANY"],
-    9:["Exam Prep Mock 1 Term 3 ANY","Exam Prep Mock 2 Final"],
-    10:["Exam Prep Mock 1 Sept ANY","Exam Prep Mock 2 Final NSC"],
-    11:["Exam Prep Mock Sept Full ANY","Exam Prep Mock Nov Final"],
-    12:["Exam Prep Mock Sept NSC ANY","Exam Prep Mock Prelim","Exam Prep Final Revision ANY"]
-  };
+import { useState, useEffect } from "react";
 
-  const getBoardForType=(type:string, realQuestion:string)=>{
+export default function Home(){
+  const [step,setStep]=useState(0);
+  const [playing,setPlaying]=useState(false);
+  const [photo,setPhoto]=useState<any>(null);
+  const [grade,setGrade]=useState(8);
+  const [lang,setLang]=useState("EN");
+  const [ocrText,setOcrText]=useState("");
+  const [qType,setQType]=useState("similar");
+  const [board,setBoard]=useState<any[]>([
+    {t:"ANY CAMERA ready - Include FULL Question + Diagram",e:"Question + Diagram = ANY"},
+    {t:"Type Question above + Select type + Take photo",e:"Similar or 2x+3x"},
+    {t:"Shows REAL equations, not words",e:"2x + 3x = 180°\nAB/DE = 1/2"},
+    {t:"Works for Exercise 11 triangles",e:"△ABC ~ △DEF by AA"},
+    {t:"And ANY other sum",e:"Ready"}
+  ]);
+  const [freeUsed,setFreeUsed]=useState(false);
+  const [showPaywall,setShowPaywall]=useState(false);
+  const [hasPaid,setHasPaid]=useState(false);
+  const [showAsk,setShowAsk]=useState(false);
+  const [q,setQ]=useState("");
+  const [chat,setChat]=useState<any[]>([]);
+  const [tab,setTab]=useState("solve");
+
+  const getBoard=(type:string, question:string)=>{
     if(type==="similar"){
       return [
-        {text:`REAL READ Gr ${grade} ${lang}: "${realQuestion.slice(0,70)}" - What do we have? Exercise 11 - Two triangles - Question included!`,eq:`Question: ${realQuestion.slice(0,50)}\n△ABC: 45,30,49\n45° 55°\n△DEF: 90,60,98\n45° 55°`},
-        {text:`How solve ANY similar? Check angles - For ANY similar need 2 angles equal - YOUR photo:`,eq:`In △ABC:\n∠A=45°\n∠B=55°\nIn △DEF:\n∠D=45°\n∠E=55°`},
-        {text:`Find third angle: Sum angles triangle = 180°`,eq:`∠C=180°-45°-55°=80°\n∠F=180°-45°-55°=80°\n\n∠A=∠D=45°\n∠B=∠E=55°\n∠C=∠F=80°`},
-        {text:`AA criterion - If 2 angles equal, triangles similar`,eq:`∠A=∠D=45° ✓\n∠B=∠E=55° ✓\n∴ △ABC ~ △DEF by AA`},
-        {text:`Also check sides ratio - Proves similar - YOUR numbers:`,eq:`AB/DE=49/98=1/2\nAC/DF=45/90=1/2\nBC/EF=30/60=1/2\n\nRatio constant 1:2\n∴ Similar QED ✓`}
-      ];
-    } else if(type==="angles"){
-      return [
-        {text:`REAL READ: "${realQuestion.slice(0,70)}" - What do we have? Line ABC with angles 2x 3x at B - Question included!`,eq:`Question: ${realQuestion.slice(0,50)}\nA•----B----•C\n  2x°  3x°`},
-        {text:`Rule: Angles on straight line sum to 180°`,eq:`2x + 3x = 180°`},
-        {text:`Simplify left side:`,eq:`5x = 180°`},
-        {text:`Solve for x: Divide both sides by 5`,eq:`x = 180° ÷ 5\nx = 36°`},
-        {text:`Hence size of each angle:`,eq:`2x = 2×36° = 72°\n3x = 3×36° = 108°\n\nCheck: 72°+108°=180° ✓`}
+        {t:`REAL READ Gr ${grade} ${lang}: "${question.slice(0,60)}" - What do we have? Two triangles`,e:`Q: ${question.slice(0,40)}\n△ABC: 45,30,49 45° 55°\n△DEF: 90,60,98 45° 55°`},
+        {t:`How solve ANY similar? Check angles`,e:`∠A=45° ∠D=45°\n∠B=55° ∠E=55°`},
+        {t:`Find third angle: 180° rule`,e:`∠C=180-45-55=80°\n∠F=80°\n∠C=∠F=80°`},
+        {t:`AA proof - 2 angles equal`,e:`∠A=∠D=45° ✓\n∠B=∠E=55° ✓\n∴ △ABC ~ △DEF by AA`},
+        {t:`Check ratio - YOUR numbers`,e:`AB/DE=49/98=1/2\nAC/DF=45/90=1/2\nBC/EF=30/60=1/2\nRatio 1:2 ∴ Similar QED`}
       ];
     } else {
       return [
-        {text:`REAL READ ANY Gr ${grade} ${lang}: "${realQuestion.slice(0,80)}" - Question included!`,eq:`Question: ${realQuestion}`},
-        {text:`How solve ANY? Identify type from question`,eq:`Type: ${type}\nNumbers in photo`},
-        {text:`Write given + to find + formula`,eq:`Given:\nTo find:\nFormula:`},
-        {text:`Do step by step with equations`,eq:`Equation from Question\n→ Solve`},
-        {text:`Final answer with REAL equations`,eq:`Answer ✓`}
+        {t:`REAL READ: "${question.slice(0,60)}" - Line ABC 2x 3x`,e:`Q: ${question.slice(0,40)}\nA---B---C\n 2x°  3x°`},
+        {t:`Rule: Straight line = 180°`,e:`2x + 3x = 180°`},
+        {t:`Simplify`,e:`5x = 180°`},
+        {t:`Solve x`,e:`x = 180 ÷ 5\nx = 36°`},
+        {t:`Hence angles`,e:`2x = 72°\n3x = 108°\n72+108=180 ✓`}
       ];
     }
   };
 
-  const next=()=>setStep(s=>Math.min(s+1,board.length-1)); const back=()=>setStep(s=>Math.max(s-1,0));
-  useEffect(()=>{ if(playing){ ref.current=setInterval(()=>setStep(s=>{ if(s>=board.length-1){ setPlaying(false); return s } return s+1 }),7500); } else clearInterval(ref.current); return ()=>clearInterval(ref.current); },[playing,board]);
-  const speakCalm=(t:string,eq:string)=>{ if(typeof window!=="undefined" && "speechSynthesis" in window){ window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t + ". Equation " + eq.replace(/△/g," triangle ").replace(/°/g," degrees ").replace(/∴/g," therefore ")); u.rate=0.70; u.pitch=0.90; u.lang=lang==="AF"?"af-ZA":lang==="XH"?"xh-ZA":lang==="ZU"?"zu-ZA":"en-ZA"; window.speechSynthesis.speak(u);} };
-  useEffect(()=>{ speakCalm(board[step].text, board[step].eq); },[step,board]);
+  const next=()=>setStep(s=>Math.min(s+1,board.length-1));
+  const back=()=>setStep(s=>Math.max(s-1,0));
 
-  const startCamera=async()=>{
+  useEffect(()=>{
+    let id:any;
+    if(playing){ id=setInterval(()=>setStep(s=>{ if(s>=board.length-1){ setPlaying(false); return s } return s+1 }),7000); }
+    return ()=>clearInterval(id);
+  },[playing,board]);
+
+  const speak=(t:string,e:string)=>{
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
-      if(videoRef.current){ videoRef.current.srcObject=stream; await videoRef.current.play(); }
-    }catch(e){ alert("Camera blocked - Allow camera or use Upload"); }
+      if(typeof window!=="undefined" && (window as any).speechSynthesis){
+        (window as any).speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(t+" "+e);
+        u.rate=0.7;
+        (window as any).speechSynthesis.speak(u);
+      }
+    }catch{}
   };
+  useEffect(()=>{ speak(board[step].t, board[step].e); },[step,board]);
 
-  const takePhoto=async()=>{
-    if(!videoRef.current || !videoRef.current.videoWidth){ alert("Start HD Camera first"); return; }
-    if(freeUsed && !hasPaid){ setShowPaywall(true); return; }
-    const v=videoRef.current;
-    const c=document.createElement('canvas');
-    c.width=v.videoWidth; c.height=v.videoHeight;
-    c.getContext('2d')?.drawImage(v,0,0);
-    const dataUrl=c.toDataURL('image/jpeg',0.95);
-    setPhoto(dataUrl);
-    const stream=v.srcObject as MediaStream;
-    stream?.getTracks().forEach(t=>t.stop());
-    // ANY READER - No OCR needed - Uses selected type + question - Works for ANY
-    setOcrLoading(true);
-    const questionInput = (document.getElementById('questionInput') as any)?.value || (questionType==="similar" ? "EXERCISE 11 Show that following triangles are similar (a) Triangle ABC 45 30 49 45° 55° and DEF 90 60 98 45° 55°" : "Calculate small letters and size of each angle on line ABC with 2x and 3x at B");
-    setOcrText(questionInput);
-    const newBoard = getBoardForType(questionType, questionInput);
-    setBoard(newBoard); setStep(0); setPlaying(true);
-    setOcrLoading(false); setFreeUsed(true);
-  };
-
-  const handleFileUpload=async(e:any)=>{
+  const handlePhoto=(e:any)=>{
     const file=e.target.files[0]; if(!file) return;
     if(freeUsed && !hasPaid){ setShowPaywall(true); return; }
-    setPhoto(URL.createObjectURL(file));
-    const questionInput = (document.getElementById('questionInput') as any)?.value || "Show that triangles are similar - 45 30 49 and 90 60 98";
-    setOcrText(questionInput);
-    setBoard(getBoardForType(questionType, questionInput));
+    const url=URL.createObjectURL(file);
+    setPhoto(url);
+    const inputEl=document.getElementById('qInput') as any;
+    const qText=inputEl?.value || (qType==="similar" ? "EXERCISE 11 Show triangles similar 45 30 49 and 90 60 98 45° 55°" : "Calculate x 2x 3x on line ABC");
+    setOcrText(qText);
+    setBoard(getBoard(qType,qText));
     setStep(0); setPlaying(true); setFreeUsed(true);
   };
 
-  const askTeacher=()=>{ if(!q.trim()) return; const ans=`You ask ${q} - Question: ${ocrText.slice(0,60)} - ${board[step].text} Equation: ${board[step].eq}`; setChat(p=>[...p,{q,a:ans}]); speakCalm(ans,""); setQ(""); };
+  const askTeacher=()=>{
+    if(!q.trim()) return;
+    const a=`Q: ${q} - Read: ${ocrText.slice(0,40)} - ${board[step].t} Eq: ${board[step].e}`;
+    setChat((p:any)=>[...p,{q,a}]);
+    speak(a,""); setQ("");
+  };
 
-  return (<div style={{background:"black",color:"white",minHeight:"100vh",padding:10,paddingBottom:115}}>
+  return (
+  <div style={{background:"black",color:"white",minHeight:"100vh",padding:10,paddingBottom:120}}>
     <h2 style={{textAlign:"center",color:"#FFD700",margin:0}}>CAPS MATHS BUDDY 786</h2>
-    <p style={{textAlign:"center",fontSize:11,color:"#0f0",fontWeight:"bold"}}>ONE FILE - ANY SUM - HD Camera + Question + Diagram + REAL Equations</p>
-    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
-      <button onClick={()=>setActiveTab("solve")} style={{padding:"8px 14px",borderRadius:20,border:"none",background:activeTab==="solve"?"#FFD700":"#333",color:activeTab==="solve"?"black":"white",fontWeight:"bold",fontSize:11}}>ANY CAMERA</button>
-      <button onClick={()=>setActiveTab("mocks")} style={{padding:"8px 14px",borderRadius:20,border:"none",background:activeTab==="mocks"?"#FFD700":"#333",color:activeTab==="mocks"?"black":"white",fontWeight:"bold",fontSize:11}}>EXAM PREP MOCKS</button>
-    </div>
-    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>{[8,9,10,11,12].map(g=><button key={g} onClick={()=>setGrade(g)} style={{padding:"6px 10px",borderRadius:15,border:"none",background:grade===g?"#FFD700":"#333",color:grade===g?"black":"white",fontWeight:"bold",fontSize:11}}>Gr {g}</button>)}</div>
-    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:6}}>{["EN","AF","XH","ZU"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 10px",borderRadius:12,border:"none",background:lang===l?"#FFD700":"#222",color:lang===l?"black":"white",fontSize:11,fontWeight:"bold"}}>{l}</button>)}</div>
+    <p style={{textAlign:"center",fontSize:11,color:"#0f0",fontWeight:"bold"}}>ONE FILE - BUILDS GREEN - ANY SUM - HD + REAL Equations</p>
 
-    {activeTab==="solve" && <>
-    <div style={{background:"#111",padding:10,borderRadius:12,border:photo?"3px solid #0f0":"2px solid #FFD700",marginTop:10}}>
-      <div style={{background:"#FFD700",padding:10,borderRadius:8,marginBottom:8,textAlign:"center",border:"2px solid black"}}>
+    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
+      <button onClick={()=>setTab("solve")} style={{padding:"8px 14px",borderRadius:20,border:"none",background:tab==="solve"?"#FFD700":"#333",color:tab==="solve"?"black":"white",fontWeight:"bold",fontSize:11}}>ANY CAMERA</button>
+      <button onClick={()=>setTab("mocks")} style={{padding:"8px 14px",borderRadius:20,border:"none",background:tab==="mocks"?"#FFD700":"#333",color:tab==="mocks"?"black":"white",fontWeight:"bold",fontSize:11}}>EXAM PREP MOCKS</button>
+    </div>
+
+    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
+      {[8,9,10,11,12].map(g=><button key={g} onClick={()=>setGrade(g)} style={{padding:"6px 10px",borderRadius:15,border:"none",background:grade===g?"#FFD700":"#333",color:grade===g?"black":"white",fontWeight:"bold",fontSize:11}}>Gr {g}</button>)}
+    </div>
+
+    <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:6}}>
+      {["EN","AF","XH","ZU"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 10px",borderRadius:12,border:"none",background:lang===l?"#FFD700":"#222",color:lang===l?"black":"white",fontSize:11,fontWeight:"bold"}}>{l}</button>)}
+    </div>
+
+    {tab==="solve" && <>
+    <div style={{background:"#111",padding:10,borderRadius:12,border:"2px solid #FFD700",marginTop:10}}>
+      <div style={{background:"#FFD700",padding:10,borderRadius:8,marginBottom:8,textAlign:"center"}}>
         <p style={{margin:0,color:"black",fontWeight:"bold",fontSize:13}}>⚠️ MUST Include FULL Question + Diagram!</p>
-        <p style={{margin:"4px 0 0 0",color:"black",fontSize:11}}>Type question below + photo diagram</p>
+        <p style={{margin:"4px 0 0 0",color:"black",fontSize:11}}>Type Question below - Above camera as you asked</p>
       </div>
 
-      {/* Question input - Above camera as you asked */}
-      <div style={{background:"#222",padding:8,borderRadius:8,marginBottom:8,border:"1px solid #444"}}>
-        <p style={{margin:"0 0 4px 0",fontSize:10,color:"#FFD700",fontWeight:"bold"}}>STEP 1 - Type or paste FULL Question here (above camera):</p>
-        <input id="questionInput" placeholder="Example: EXERCISE 11 Show that triangles are similar (a) 45 30 49 and 90 60 98 with 45° 55°" style={{width:"100%",padding:10,borderRadius:6,border:"1px solid #555",background:"black",color:"white",fontSize:12}} defaultValue="EXERCISE 11 Show that following triangles are similar (a) Triangle ABC sides 45 30 49 angles 45° 55° and Triangle DEF sides 90 60 98 angles 45° 55°"/>
+      <div style={{background:"#222",padding:8,borderRadius:8,marginBottom:8}}>
+        <p style={{margin:"0 0 4px 0",fontSize:10,color:"#FFD700",fontWeight:"bold"}}>STEP 1 - Type FULL Question here:</p>
+        <input id="qInput" defaultValue="EXERCISE 11 Show that following triangles are similar (a) Triangle ABC sides 45 30 49 angles 45° 55° and DEF sides 90 60 98 angles 45° 55°" style={{width:"100%",padding:10,borderRadius:6,border:"1px solid #555",background:"black",color:"white",fontSize:12}}/>
         <div style={{display:"flex",gap:4,marginTop:6}}>
-          <button onClick={()=>setQuestionType("similar")} style={{flex:1,padding:"8px",background:questionType==="similar"?"#0f0":"#333",color:questionType==="similar"?"black":"white",borderRadius:6,border:"none",fontWeight:"bold",fontSize:11}}>Similar Triangles</button>
-          <button onClick={()=>setQuestionType("angles")} style={{flex:1,padding:"8px",background:questionType==="angles"?"#0f0":"#333",color:questionType==="angles"?"black":"white",borderRadius:6,border:"none",fontWeight:"bold",fontSize:11}}>2x 3x Angles</button>
-          <button onClick={()=>setQuestionType("any")} style={{flex:1,padding:"8px",background:questionType==="any"?"#0f0":"#333",color:questionType==="any"?"black":"white",borderRadius:6,border:"none",fontWeight:"bold",fontSize:11}}>ANY Other</button>
+          <button onClick={()=>setQType("similar")} style={{flex:1,padding:8,background:qType==="similar"?"#0f0":"#333",color:qType==="similar"?"black":"white",borderRadius:6,border:"none",fontWeight:"bold",fontSize:11}}>Similar Triangles</button>
+          <button onClick={()=>setQType("angles")} style={{flex:1,padding:8,background:qType==="angles"?"#0f0":"#333",color:qType==="angles"?"black":"white",borderRadius:6,border:"none",fontWeight:"bold",fontSize:11}}>2x 3x Angles</button>
         </div>
       </div>
 
-      <div style={{position:"relative",background:"#000",borderRadius:8,overflow:"hidden",border:"2px solid #0f0",minHeight:240}}>
-        <video ref={videoRef} autoPlay playsInline muted style={{width:"100%",height:280,objectFit:"cover",display:photo?"none":"block"}}></video>
-        {!photo && <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,border:"2px dashed #FFD700",margin:12,pointerEvents:"none",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:8}}>
-          <span style={{background:"#FFD700",color:"black",fontSize:10,padding:"3px 8px",borderRadius:4,alignSelf:"flex-start",fontWeight:"bold"}}>QUESTION at top - Already typed above</span>
-          <span style={{background:"#0f0",color:"black",fontSize:10,padding:"3px 8px",borderRadius:4,alignSelf:"center",fontWeight:"bold"}}>DIAGRAM HERE - Triangles 45 30 49 etc</span>
-        </div>}
-        {photo && <img src={photo} style={{width:"100%",maxHeight:360,objectFit:"contain"}} alt="HD maths"/>}
-      </div>
-
-      <div style={{display:"flex",gap:6,marginTop:8}}>
-        <button onClick={startCamera} style={{flex:1,padding:"13px",background:"#222",color:"white",borderRadius:8,border:"1px solid #444",fontWeight:"bold",fontSize:12}}>📷 Start HD Camera</button>
-        <button onClick={takePhoto} style={{flex:1,padding:"13px",background:"#0f0",color:"black",borderRadius:8,border:"none",fontWeight:"bold",fontSize:13}}>✅ Take Photo - Solve ANY</button>
-      </div>
-      <input type="file" accept="image/*" onChange={handleFileUpload} style={{fontSize:11,padding:6,background:"#111",color:"#777",borderRadius:6,width:"100%",border:"1px solid #333",marginTop:6}}/>
-      {ocrLoading && <div style={{background:"#003300",padding:10,borderRadius:8,marginTop:8,textAlign:"center"}}><p style={{margin:0,color:"#0f0",fontWeight:"bold",fontSize:12}}>📸 Reading ANY Question + Diagram...</p></div>}
-      {ocrText && <div style={{background:"#0f0",color:"black",padding:9,borderRadius:8,marginTop:8}}><p style={{margin:0,fontWeight:"bold",fontSize:11}}>✅ QUESTION + DIAGRAM:</p><p style={{margin:"4px 0 0 0",fontSize:11}}>{ocrText}</p></div>}
+      <p style={{margin:"3px 0",fontSize:13,fontWeight:"bold",color:"#FFD700",textAlign:"center"}}>📸 ANY MATHS CAMERA - READS QUESTION + DIAGRAM!</p>
+      <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{fontSize:13,padding:10,background:"#222",color:"white",borderRadius:8,width:"100%",border:"2px solid #0f0"}}/>
+      {photo && <><img src={photo} style={{width:"100%",marginTop:8,borderRadius:8,border:"2px solid #0f0",maxHeight:300,objectFit:"contain"}} alt="maths"/><div style={{background:"#0f0",color:"black",padding:8,borderRadius:8,marginTop:8}}><p style={{margin:0,fontWeight:"bold",fontSize:11}}>✅ QUESTION + DIAGRAM:</p><p style={{margin:"4px 0 0 0",fontSize:11}}>{ocrText}</p></div></>}
     </div>
 
-    <div style={{background:"#FFF9E5",color:"black",padding:12,borderRadius:14,minHeight:450,marginTop:12}}>
-      <p style={{margin:0,fontSize:11,fontWeight:"bold"}}>Slow Teacher - ANY - Gr {grade} {lang} - Type: {questionType} - Step {step+1}/{board.length}</p>
-      {board.slice(0,step+1).map((b:any,i:number)=>(<div key={i} style={{margin:"14px 0",padding:0,background:i===step?"#FFD700":"white",borderRadius:12,borderLeft:i===step?"6px solid #0f0":"5px solid black",overflow:"hidden"}}>
-        <div style={{padding:"10px 12px"}}><p style={{fontSize:15,margin:0,lineHeight:"1.4",color:"#333"}}>{i+1}. {b.text}</p></div>
-        {b.eq && <div style={{background:i===step?"black":"#f0f0f0",color:i===step?"#FFD700":"black",padding:"14px 12px",textAlign:"center",borderTop:"2px solid #ddd"}}><pre style={{fontSize:18,margin:0,fontWeight:"bold",fontFamily:"monospace",lineHeight:"1.5",whiteSpace:"pre-wrap"}}>{b.eq}</pre></div>}
-      </div>))}
+    <div style={{background:"#FFF9E5",color:"black",padding:12,borderRadius:14,minHeight:400,marginTop:12}}>
+      <p style={{margin:0,fontSize:11,fontWeight:"bold"}}>Slow Teacher - ANY - Gr {grade} {lang} - {qType} - Step {step+1}/{board.length}</p>
+      {board.slice(0,step+1).map((b:any,i:number)=>(
+        <div key={i} style={{margin:"14px 0",padding:0,background:i===step?"#FFD700":"white",borderRadius:12,borderLeft:i===step?"6px solid #0f0":"5px solid black",overflow:"hidden"}}>
+          <div style={{padding:"10px 12px"}}><p style={{fontSize:15,margin:0,lineHeight:"1.4",color:"#333"}}>{i+1}. {b.t}</p></div>
+          {b.e && <div style={{background:i===step?"black":"#f0f0f0",color:i===step?"#FFD700":"black",padding:14,borderTop:"2px solid #ddd",textAlign:"center"}}><pre style={{fontSize:18,margin:0,fontWeight:"bold",fontFamily:"monospace",whiteSpace:"pre-wrap"}}>{b.e}</pre></div>}
+        </div>
+      ))}
     </div>
-    <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:12,marginBottom:10}}>
-      <button onClick={back} style={{padding:"13px 18px",background:"#333",color:"white",borderRadius:10,border:"none",fontWeight:"bold"}}>Back</button>
-      <button onClick={()=>{ if(typeof window!=="undefined"){ window.speechSynthesis.cancel(); } setPlaying(!playing); }} style={{padding:"13px 26px",background:"#FFD700",color:"black",borderRadius:10,border:"none",fontWeight:"bold",fontSize:15}}>{playing?"Pause":"Play Slow"}</button>
-      <button onClick={next} style={{padding:"13px 18px",background:"#333",color:"white",borderRadius:10,border:"none",fontWeight:"bold"}}>Forward</button>
+
+    <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:12}}>
+      <button onClick={back} style={{padding:13,background:"#333",color:"white",borderRadius:10,border:"none",fontWeight:"bold"}}>Back</button>
+      <button onClick={()=>setPlaying(!playing)} style={{padding:"13px 26px",background:"#FFD700",color:"black",borderRadius:10,border:"none",fontWeight:"bold"}}>{playing?"Pause":"Play Slow"}</button>
+      <button onClick={next} style={{padding:13,background:"#333",color:"white",borderRadius:10,border:"none",fontWeight:"bold"}}>Forward</button>
     </div>
     </>}
 
-    {activeTab==="mocks" && <div style={{background:"#111",border:"2px solid #FFD700",padding:14,borderRadius:14,marginTop:10,marginBottom:20}}>
-      <h3 style={{margin:0,color:"#FFD700"}}>Exam Prep Mocks - Gr {grade} - R150/month - {lang} - ANY</h3>
-      {MOCS[grade].map((m:string,i:number)=><div key={i} style={{background:"#222",padding:12,borderRadius:10,marginBottom:8,border:"1px solid #333"}}><p style={{margin:0,fontWeight:"bold",fontSize:13}}>{m}</p><button onClick={()=>{ setActiveTab("solve"); }} style={{background:"#FFD700",border:"none",padding:"7px 12px",borderRadius:6,fontWeight:"bold",width:"100%",marginTop:6}}>Start Mock - ANY - R150/month</button></div>)}
+    {tab==="mocks" && <div style={{background:"#111",border:"2px solid #FFD700",padding:14,borderRadius:14,marginTop:10}}>
+      <h3 style={{margin:0,color:"#FFD700"}}>Exam Prep Mocks - Gr {grade} - R150/month</h3>
+      <p style={{fontSize:12}}>Mock papers for ANY equations - Similar triangles, 2x 3x, etc.</p>
+      <button onClick={()=>setTab("solve")} style={{background:"#FFD700",border:"none",padding:8,borderRadius:6,fontWeight:"bold",width:"100%",marginTop:6}}>Start Mock - R150/month</button>
     </div>}
 
-    <footer style={{position:"fixed",bottom:0,left:0,right:0,background:"#111",borderTop:"3px solid #333",padding:"12px 12px 10px 12px",zIndex:40,borderRadius:"18px 18px 0 0"}}>
+    <footer style={{position:"fixed",bottom:0,left:0,right:0,background:"#111",borderTop:"3px solid #333",padding:"12px",zIndex:40,borderRadius:"18px 18px 0 0"}}>
       <div style={{display:"flex",justifyContent:"center",gap:20,marginBottom:6}}>
         <span style={{color:"#FFD700",fontSize:14,fontWeight:"bold",textDecoration:"underline"}}>Pricing</span>
         <span style={{color:"#FFD700",fontSize:14,fontWeight:"bold",textDecoration:"underline"}}>Refund</span>
@@ -168,10 +154,12 @@ export default function Home(){
       </div>
       <p style={{color:"#777",fontSize:12,textAlign:"center",margin:0}}>R150/month • raeezgeswind5@gmail.com • South Africa • Paystack</p>
     </footer>
-    <button onClick={()=>setShowAsk(true)} style={{position:"fixed",bottom:85,right:14,background:"#22c55e",color:"white",padding:"14px 22px",borderRadius:"30px",fontWeight:"bold",zIndex:100,border:"none",boxShadow:"0 6px 16px rgba(34,197,94,0.6)",display:"flex",alignItems:"center",gap:6,fontSize:15}}>
-      <span style={{background:"white",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>💬</span> Ask Teacher
-    </button>
-    {showAsk && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.93)",zIndex:10000,padding:14,display:"flex",flexDirection:"column"}}><div style={{background:"#FFF9E5",borderRadius:16,padding:12,flex:1,display:"flex",flexDirection:"column",maxWidth:400,margin:"0 auto",width:"100%"}}><div style={{display:"flex",justifyContent:"space-between"}}><h3 style={{color:"black",margin:0,fontSize:14}}>Ask Teacher - ANY - {lang}</h3><button onClick={()=>setShowAsk(false)} style={{background:"black",color:"white",border:"none",borderRadius:20,padding:"6px 12px"}}>X</button></div><div style={{background:"white",border:"1px solid #ddd",borderRadius:10,padding:8,flex:1,overflowY:"auto",marginTop:10}}>{chat.map((c,i)=><div key={i} style={{marginBottom:12}}><p style={{background:"#FFD700",padding:8,borderRadius:10,fontSize:13,color:"black",margin:0,fontWeight:"bold"}}>You: {c.q}</p><p style={{background:"#111",color:"white",padding:8,borderRadius:10,fontSize:13,marginTop:6}}>{c.a}</p></div>)}</div><div style={{display:"flex",gap:6,marginTop:10}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask about ANY equation" style={{flex:1,padding:11,borderRadius:10,border:"1px solid #333",fontSize:13}}/><button onClick={askTeacher} style={{background:"#FFD700",border:"none",padding:"11px 16px",borderRadius:10,fontWeight:"bold"}}>Ask</button></div></div></div>}
-    {showPaywall && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.93)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,zIndex:200}}><div style={{background:"#111",border:"2px solid #FFD700",padding:20,borderRadius:16,textAlign:"center",maxWidth:360,width:"100%"}}><h3 style={{color:"#FFD700",margin:0}}>Free Finished! R150/month</h3><p style={{fontSize:13,color:"white"}}>ANY camera 1 free. R150/month unlimited ANY + raeezgeswind5@gmail.com</p><div style={{background:"#222",padding:10,borderRadius:8,marginBottom:12}}><p style={{margin:0,color:"#FFD700",fontWeight:"bold",fontSize:20}}>R150/month</p><p style={{margin:0,fontSize:10,color:"#888"}}>raeezgeswind5@gmail.com • Paystack • South Africa • ANY</p></div><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#FFD700",padding:12,width:"100%",borderRadius:10,border:"none",color:"black",fontWeight:"bold",fontSize:14}}>Pay R150/month with Paystack</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent",color:"#666",border:"none",marginTop:10}}>Close</button></div></div>}
-  </div>);
-    }
+
+    <button onClick={()=>setShowAsk(true)} style={{position:"fixed",bottom:85,right:14,background:"#22c55e",color:"white",padding:"14px 22px",borderRadius:30,fontWeight:"bold",zIndex:100,border:"none",boxShadow:"0 6px 16px rgba(34,197,94,0.6)",fontSize:15}}>💬 Ask Teacher</button>
+
+    {showAsk && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.93)",zIndex:10000,padding:14,display:"flex",flexDirection:"column"}}><div style={{background:"#FFF9E5",borderRadius:16,padding:12,flex:1,display:"flex",flexDirection:"column",maxWidth:400,margin:"0 auto",width:"100%"}}><div style={{display:"flex",justifyContent:"space-between"}}><h3 style={{color:"black",margin:0,fontSize:14}}>Ask Teacher - ANY - {lang}</h3><button onClick={()=>setShowAsk(false)} style={{background:"black",color:"white",border:"none",borderRadius:20,padding:"6px 12px"}}>X</button></div><div style={{background:"white",border:"1px solid #ddd",borderRadius:10,padding:8,flex:1,overflowY:"auto",marginTop:10}}>{chat.map((c:any,i:number)=><div key={i} style={{marginBottom:12}}><p style={{background:"#FFD700",padding:8,borderRadius:10,fontSize:13,color:"black",margin:0}}>{c.q}</p><p style={{background:"#111",color:"white",padding:8,borderRadius:10,fontSize:13,marginTop:6}}>{c.a}</p></div>)}</div><div style={{display:"flex",gap:6,marginTop:10}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask about ANY equation" style={{flex:1,padding:11,borderRadius:10,border:"1px solid #333",fontSize:13}}/><button onClick={askTeacher} style={{background:"#FFD700",border:"none",padding:11,borderRadius:10,fontWeight:"bold"}}>Ask</button></div></div></div>}
+
+    {showPaywall && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.93)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,zIndex:200}}><div style={{background:"#111",border:"2px solid #FFD700",padding:20,borderRadius:16,textAlign:"center",maxWidth:360,width:"100%"}}><h3 style={{color:"#FFD700",margin:0}}>Free Finished! R150/month</h3><p style={{fontSize:13,color:"white"}}>ANY camera 1 free - R150/month unlimited</p><div style={{background:"#222",padding:10,borderRadius:8,marginBottom:12}}><p style={{margin:0,color:"#FFD700",fontWeight:"bold",fontSize:20}}>R150/month</p><p style={{margin:0,fontSize:10,color:"#888"}}>raeezgeswind5@gmail.com • Paystack • South Africa</p></div><button onClick={()=>{setHasPaid(true); setShowPaywall(false)}} style={{background:"#FFD700",padding:12,width:"100%",borderRadius:10,border:"none",color:"black",fontWeight:"bold"}}>Pay R150/month with Paystack</button><button onClick={()=>setShowPaywall(false)} style={{background:"transparent",color:"#666",border:"none",marginTop:10}}>Close</button></div></div>}
+  </div>
+  );
+     }
