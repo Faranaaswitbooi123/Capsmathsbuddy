@@ -19,7 +19,8 @@ export default function Home(){
     if(s) setSolvesUsed(parseInt(s)); if(p==="true") setHasPaid(true); if(t) setTerm(parseInt(t));
   },[]);
 
-  const keys=["( )","x","=","+","-","×","÷","²","³","√","AB","△","∠","°","Distributive","Perimeter","Area","6cm","4cm","0-9"];
+  const keys=["7","8","9","( )","x","=","÷","4","5","6","+","-","×","√","1","2","3","²","³","AB","0",".","△","∠","°","%","Distributive 2x(3+4)","Perimeter P=2L+2B","Area A=LxB","6cm","4cm","Pythagoras a²+b²=c²","Functions","Angles","Whole Numbers","Exponents","Equations","Graphs","Probability","Data Handling"];
+
   const termTopics:any={
     1: ["Whole Numbers","Exponents","Numeric Patterns","Distributive 2x(3+4)","Algebraic Expressions","Equations"],
     2: ["Functions","Geometry Angles","Triangles","Theorem Pythagoras","Perimeter 6cm 4cm","Area"],
@@ -105,7 +106,7 @@ export default function Home(){
         <button onClick={()=>setTab("teacher")} style={{padding:"10px 14px",borderRadius:20,border:"none",background:tab==="teacher"?"#0f0":"#333",color:tab==="teacher"?"black":"white",fontWeight:"bold",fontSize:11}}>👨‍🏫 Ask Teacher</button>
         <button onClick={()=>setTab("mocks")} style={{padding:"10px 14px",borderRadius:20,border:"none",background:tab==="mocks"?"#FFD700":"#333",color:tab==="mocks"?"black":"white",fontWeight:"bold",fontSize:11}}>📝 Exam Prep Mocs</button>
       </div>
-      <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:6}}>
+      <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:6,flexWrap:"wrap"}}>
         {[8,9,10,11,12].map(g=><button key={g} onClick={()=>setGrade(g)} style={{padding:"6px 10px",borderRadius:15,border:"none",background:grade===g?"#FFD700":"#333",color:grade===g?"black":"white",fontWeight:"bold",fontSize:11}}>Gr {g}</button>)}
         {["EN","AF","XH","ZU"].map(l=><button key={l} onClick={()=>setLang(l)} style={{padding:"5px 8px",borderRadius:12,border:"none",background:lang===l?"#FFD700":"#222",color:lang===l?"black":"white",fontSize:10,fontWeight:"bold"}}>{l}</button>)}
       </div>
@@ -129,7 +130,7 @@ export default function Home(){
           <p style={{margin:"0 0 4px 0",fontSize:11,color:"#FFD700",fontWeight:"bold"}}>{hasPaid?"UNLIMITED - See full":solvesUsed>=1?"✅ 1st FREE - You SAW full - Scroll down":`1st FREE - Will show FULL solution - Term ${term} Gr ${grade}`}</p>
           <textarea value={input} onChange={e=>setInput(e.target.value)} style={{width:"100%",height:50,padding:8,borderRadius:8,background:"black",color:"white",border:"2px solid #0f0",fontSize:12}}/>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:6}}>
-            {keys.map(k=><button key={k} onClick={()=>setInput(p=>p+" "+k+" ")} style={{padding:"4px 5px",background:"#222",color:"#FFD700",borderRadius:5,border:"1px solid #444",fontSize:10,fontWeight:"bold"}}>{k}</button>)}
+            {keys.map(k=><button key={k} onClick={()=>setInput(p=>p+" "+k+" ")} style={{padding:"5px 6px",background:"#222",color:"#FFD700",borderRadius:5,border:"1px solid #444",fontSize:10,fontWeight:"bold"}}>{k}</button>)}
           </div>
           <div style={{display:"flex",gap:6,marginTop:8}}>
             <button onClick={startVoice} style={{flex:1,padding:8,background:listening?"red":"#333",color:"white",borderRadius:8,border:"none",fontSize:11}}>{listening?"🔴 Listening...":"🎤 Speak"}</button>
@@ -205,8 +206,4 @@ export default function Home(){
           <span style={{color:"#FFD700",fontSize:13,fontWeight:"bold",textDecoration:"underline"}}>Refund</span>
           <span style={{color:"#FFD700",fontSize:13,fontWeight:"bold",textDecoration:"underline"}}>Cancel</span>
         </div>
-        <p style={{color:"#777",fontSize:11,textAlign:"center",margin:0}}>R150/month • Exam Prep Mocs T{term} • {hasPaid?"PAID ∞ All Terms":"FREE "+solvesUsed+"/1 - 1st FREE only"} • Gr {grade} {lang}</p>
-      </footer>
-    </div>
-  );
-}
+        <p style={{color:"#777",fontSize:11,textAlign:"center",margin:0}}>R150/month • Exam Prep Mocs T{term} • {hasPaid?"PAID ∞ All Terms":"FREE "+solvesUs
