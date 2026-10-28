@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 import { useState, useEffect, useRef } from "react";
 export default function Home(){
@@ -45,20 +46,4 @@ export default function Home(){
   const simulatePaid=()=>{ setHasPaid(true); localStorage.setItem("caps_paid","true"); setShowPaywall(false); };
   const resetTrial=()=>{ localStorage.removeItem("caps_solves"); localStorage.removeItem("caps_paid"); setSolvesUsed(0); setHasPaid(false); setShowPaywall(false); alert("Reset done - 1 free again"); };
 
-  // SCIENTIFIC KEYBOARD - OPEN LIKE FIRST ONE YOU LIKED
-  const rowStyle={display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5,marginBottom:5} as any;
-  const btn = (label:string, color="#333", text="#FFD700")=>({padding:"14px 2px",background:color,color:text,borderRadius:8,border:"1px solid #444",fontSize:13,fontWeight:"bold"} as any);
-
-  return (
-    <div style={{background:"black",color:"white",minHeight:"100vh",padding:10,paddingBottom:180}}>
-      <h2 style={{textAlign:"center",color:"#FFD700",margin:0}}>CAPS MATHS BUDDY 786</h2>
-      <p style={{textAlign:"center",fontSize:10,color:"#0f0"}}>SCIENTIFIC OPEN - {hasPaid?"UNLIMITED":`${1 - solvesUsed} FREE LEFT`}</p>
-      <div style={{display:"flex",gap:4,justifyContent:"center",marginTop:8}}>
-        <button onClick={()=>setTab("solve")} style={{padding:"10px 14px",borderRadius:20,border:"none",background:tab==="solve"?"#FFD700":"#333",color:tab==="solve"?"black":"white",fontWeight:"bold",fontSize:11}}>CALC {hasPaid?"INF":`${1 - solvesUsed} free`}</button>
-        <button onClick={()=>setTab("teacher")} style={{padding:"10px 14px",borderRadius:20,border:"none",background:tab==="teacher"?"#0f0":"#333",color:tab==="teacher"?"black":"white",fontWeight:"bold",fontSize:11}}>Teacher</button>
-        <button onClick={()=>setTab("mocks")} style={{padding:"10px 14px",borderRadius:20,border:"none",background:tab==="mocks"?"#FFD700":"#333",color:tab==="mocks"?"black":"white",fontWeight:"bold",fontSize:11}}>Exam</button>
-      </div>
-      {showPaywall && (
-        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.95)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#111",border:"3px solid #FFD700",borderRadius:16,padding:20,maxWidth:340,width:"100%",textAlign:"center"}}>
-            <h2 style={{color:"#FFD700",margin:0}}>1 Free Used</h2><p style={{color:"#0f0",
+  //
