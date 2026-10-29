@@ -1,237 +1,364 @@
-// @ts-nocheck
 "use client";
-import { useState, useEffect, useRef } from "react";
-export default function Home(){
-  const [input,setInput]=useState("2 x (3+4)");
-  const [tab,setTab]=useState("any");
-  const [grade,setGrade]=useState(8);
-  const [lang,setLang]=useState("English");
-  const [term,setTerm]=useState(2);
-  const [step,setStep]=useState(0);
-  const [solvesUsed,setSolvesUsed]=useState(0);
-  const [hasPaid,setHasPaid]=useState(false);
-  const [showPaywall,setShowPaywall]=useState(false);
-  const [board,setBoard]=useState([]);
-  const [listening,setListening]=useState(false);
-  const [teacherQ,setTeacherQ]=useState("");
-  const [teacherChat,setTeacherChat]=useState([{role:"teacher", text:"Salam! CAPS Teacher Gr 8-12 - Ask any CAPS sum"}]);
-  const [examAns,setExamAns]=useState("");
-  const [examRes,setExamRes]=useState("");
-  const canvasRef=useRef(null);
-  const [isDrawing,setIsDrawing]=useState(false);
-  const capsTopics={
-    8:{1:"Whole Numbers - CAPS",2:"Algebra Equations - CAPS",3:"Geometry Pythagoras - CAPS",4:"Data Finance - CAPS"},
-    9:{1:"Exponents - CAPS",2:"Algebra Factorisation - CAPS",3:"Geometry Trig - CAPS",4:"Stats Finance - CAPS"},
-    10:{1:"Algebra Expressions - CAPS",2:"Algebra Factorisation - CAPS",3:"Geometry Trig - CAPS",4:"Stats Finance - CAPS"},
-    11:{1:"Algebra Patterns - CAPS",2:"Algebra Functions - CAPS",3:"Geometry Trig - CAPS",4:"Finance Stats - CAPS"},
-    12:{1:"Number Patterns - CAPS",2:"Calculus - CAPS",3:"Trig Geometry - CAPS",4:"Stats Exam Revision - CAPS"}
+import { useState, useEffect } from "react";
+
+type Grade = "8" | "9" | "10" | "11" | "12";
+type Term = "1" | "2" | "3" | "4";
+type Lang = "EN" | "AF" | "ZU";
+type Tab = "any" | "lesson" | "quiz" | "past" | "calc";
+
+const CAPS_DATA: any = {
+  "8": { "1": { title: "Whole Numbers & Integers", lessons: ["Exponents", "Numeric & Geometric Patterns", "Functions & Relationships"], quiz: [{q:"What is 2^5?", a:"32", opts:["16","32","64","10"]}, {q:"-5 + 8 = ?", a:"3", opts:["-3","3","13","-13"]}] }, "2": { title: "Fractions & Algebra", lessons: ["Common Fractions", "Decimal Fractions", "Algebraic Expressions"], quiz: [] }, "3": { title: "Geometry & Pythagoras", lessons: ["Theorem of Pythagoras", "Area & Perimeter", "Transformations"], quiz: [] }, "4": { title: "Data & Probability", lessons: ["Data Handling", "Probability", "Revision"], quiz: [] } },
+  "9": { "1": { title: "Integers & Exponents", lessons: ["Exponents Laws", "Finance", "Patterns"], quiz: [] }, "2": { title: "Algebra & Graphs", lessons: ["Factorisation", "Graphs", "Equations"], quiz: [] }, "3": { title: "Geometry & Trig", lessons: ["Congruency", "Pythagoras", "Trig Intro"], quiz: [] }, "4": { title: "Stats & Revision", lessons: ["Statistics", "Probability", "Exam Revision"], quiz: [] } },
+  "10": { "1": { title: "Algebra & Equations", lessons: ["Exponents", "Number Patterns", "Finance"], quiz: [] }, "2": { title: "Functions & Trig", lessons: ["Functions", "Trigonometry", "Analytical Geometry"], quiz: [] }, "3": { title: "Geometry & Measurement", lessons: ["Euclidean Geometry", "Measurement", "Trig 2D"], quiz: [] }, "4": { title: "Stats & Probability", lessons: ["Statistics", "Probability", "Revision"], quiz: [] } },
+  "11": { "1": { title: "Algebra & Functions", lessons: ["Exponents & Surds", "Equations", "Inequalities"], quiz: [] }, "2": { title: "Trig & Geometry", lessons: ["Trigonometry", "Analytical", "Functions"], quiz: [] }, "3": { title: "Geometry & Finance", lessons: ["Euclidean", "Finance", "Stats"], quiz: [] }, "4": { title: "Revision & Probability", lessons: ["Probability", "Revision", "Exams"], quiz: [] } },
+  "12": { "1": { title: "Calculus & Finance", lessons: ["Finance", "Functions", "Number Patterns"], quiz: [] }, "2": { title: "Calculus & Trig", lessons: ["Differential Calculus", "Analytical", "Trig"], quiz: [] }, "3": { title: "Geometry & Stats", lessons: ["Euclidean", "Counting", "Stats"], quiz: [] }, "4": { title: "Final Matric Revision", lessons: ["Paper 1 Revision", "Paper 2 Revision", "Final Exam"], quiz: [] } }
+};
+
+const LANG_TXT: any = {
+  EN: { buddy: "CAPS MATHS BUDDY 786", slogan: "Your Perfect Gr 8-12 Buddy - Term 1-4", any: "Any Subject Help", lesson: "Lesson", quiz: "Quiz", past: "Past Papers", calc: "Calculator", talk: "Auto Talk", ask: "Ask anything Maths or other subjects...", grade: "Grade", term: "Term" },
+  AF: { buddy: "CAPS WISKUNDE MAATJIE 786", slogan: "Jou Perfekte Gr 8-12 Maatjie", any: "Enige Vak Hulp", lesson: "Les", quiz: "Vasvra", past: "Vraestelle", calc: "Sakrekenaar", talk: "Auto Praat", ask: "Vra enige Wiskunde...", grade: "Graad", term: "Kwartaal" },
+  ZU: { buddy: "CAPS MATHS UMFOWETHU 786", slogan: "Umngani Wakho Ophelele Gr 8-12", any: "Usizo Lwanoma Yisiphi Isifundo", lesson: "Isifundo", quiz: "Imibuzo", past: "Amaphepha Adlule", calc: "Isibali", talk: "Khuluma Okuzenzakalelayo", ask: "Buza noma yini...", grade: "Ibanga", term: "Ikota" }
+};
+
+export default function Page(){
+  const [grade, setGrade] = useState<Grade>("10");
+  const [term, setTerm] = useState<Term>("1");
+  const [lang, setLang] = useState<Lang>("EN");
+  const [tab, setTab] = useState<Tab>("any");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [isTalking, setIsTalking] = useState(false);
+  const [autoTalk, setAutoTalk] = useState(true);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [score, setScore] = useState(0);
+
+  const t = LANG_TXT[lang];
+  const current = CAPS_DATA[grade]?.[term] || CAPS_DATA["10"]["1"];
+
+  const speak = (text: string) => {
+    if(!autoTalk) return;
+    if(typeof window === "undefined") return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9;
+    u.lang = lang === "AF" ? "af-ZA" : lang === "ZU" ? "zu-ZA" : "en-ZA";
+    setIsTalking(true);
+    u.onend = () => setIsTalking(false);
+    window.speechSynthesis.speak(u);
   };
-  const capsMocks={
-    8:{1:{q:"Term 1 - Gr8: 12 + 3 x 4",a:"24"},2:{q:"Term 2 - Gr8: Solve 2x+3=11",a:"4"},3:{q:"Term 3 - Gr8: Pythagoras 3,4",a:"5"},4:{q:"Term 4 - Gr8: Mean 2,4,6,8",a:"5"}},
-    9:{1:{q:"Term 1 - Gr9: 2^3 x 2^2",a:"32"},2:{q:"Term 2 - Gr9: Factor x^2-9",a:"(x-3)(x+3)"},3:{q:"Term 3 - Gr9: Area triangle",a:"12"},4:{q:"Term 4 - Gr9: Interest",a:"200"}},
-    10:{1:{q:"Term 1 - Gr10: 3(x+2)=21",a:"5"},2:{q:"Term 2 - Gr10: x^2+5x+6",a:"(x+2)(x+3)"},3:{q:"Term 3 - Gr10: sin30",a:"0.5"},4:{q:"Term 4 - Gr10: Prob",a:"0.5"}},
-    11:{1:{q:"Term 1 - Gr11: 2x^2=8",a:"2 or -2"},2:{q:"Term 2 - Gr11: b^2-4ac",a:"real"},3:{q:"Term 3 - Gr11: deriv x^2",a:"2x"},4:{q:"Term 4 - Gr11: compound",a:"A=P(1+i)^n"}},
-    12:{1:{q:"Term 1 - Gr12: 2,5,8 next",a:"11"},2:{q:"Term 2 - Gr12: deriv x^2",a:"2x"},3:{q:"Term 3 - Gr12: sin x=0.5",a:"30"},4:{q:"Term 4 - Gr12: Matric",a:"Revision"}}
+
+  useEffect(()=>{ if(answer) speak(answer); }, [answer]);
+
+  const handleAsk = () => {
+    if(!question.trim()) return;
+    const q = question.toLowerCase();
+    let res = "";
+    if(q.includes("pythagoras") || q.includes("triangle")){
+      res = `Pythagoras: a² + b² = c². For Grade ${grade} Term ${term}: Example: If a=3, b=4, then c=5 because 9+16=25. This is in ${current.title}. Want steps?`;
+    } else if(q.includes("exponent")){
+      res = `Exponents Law: x^a * x^b = x^(a+b). For Grade ${grade}: Example 2^3 * 2^2 = 2^5 = 32. Division: x^a / x^b = x^(a-b).`;
+    } else if(q.includes("finance") || q.includes("interest")){
+      res = `Finance: Simple Interest A = P(1+in), Compound A = P(1+i)^n. Grade ${grade} CAPS Term ${term} focus: ${current.title}. Give me numbers I calculate.`;
+    } else if(q.includes("factor") || q.includes("algebra")){
+      res = `Algebra Grade ${grade}: Factorise: ax²+bx+c. Example: x²+5x+6 = (x+2)(x+3). Want me to factorise your sum? Type it.`;    } else if(q.includes("trig")){
+      res = `Trig: sinθ = opp/hyp, cosθ = adj/hyp, tanθ = opp/adj. SOH CAH TOA. Grade ${grade} level. Give angle I solve.`;
+    } else {
+      res = `Perfect Answer for Grade ${grade} Term ${term} (${current.title}): ${question} - Here's step-by-step CAPS method: 1) Understand, 2) Formula, 3) Substitute, 4) Solve, 5) Check. For ${question}, apply ${current.lessons[0]} method. Need full working? Ask specific.`;
+    }
+    setAnswer(res);
   };
-  const langMap={
-    English:{bracket:"CAPS BODMAS Brackets (M1)",times:"CAPS Multiplication (M1)",plus:"CAPS Addition Inverse (M1)",answer:"CAPS Answer (A1)"},
-    Afrikaans:{bracket:"CAPS Hakies (M1)",times:"CAPS Vermenigvuldiging (M1)",plus:"CAPS Optelling (M1)",answer:"CAPS Antwoord (A1)"},
-    isiXhosa:{bracket:"CAPS Izibiyeli (M1)",times:"CAPS Ukuphindaphinda (M1)",plus:"CAPS Ukudibanisa (M1)",answer:"CAPS Impendulo (A1)"},
-    isiZulu:{bracket:"CAPS Abakaki (M1)",times:"CAPS Ukuphindaphinda (M1)",plus:"CAPS Ukwengeza (M1)",answer:"CAPS Impendulo (A1)"}
+
+  const handleQuiz = (opt: string) => {
+    const qs = current.quiz.length ? current.quiz : [{q:`What is lesson in ${current.title}?`, a: current.lessons[0], opts: [...current.lessons, "Revision"]}];
+    const correct = qs[quizIndex % qs.length].a;
+    if(opt === correct) { setScore(s=>s+1); setAnswer(`Correct! ${correct} is right! Score ${score+1}`); } else { setAnswer(`Not correct. Answer is ${correct}. Keep trying! Score ${score}`); }
+    setQuizIndex(i=>i+1);
   };
-  useEffect(()=>{
-    try{
-      localStorage.removeItem("caps_solves");
-      const s=localStorage.getItem("caps_CAPS_v6_solves");
-      const p=localStorage.getItem("caps_CAPS_v6_paid");
-      if(s) setSolvesUsed(parseInt(s)||0);
-      if(p==="true") setHasPaid(true);
-      if(window.speechSynthesis) window.speechSynthesis.getVoices();
-      const c=canvasRef.current;
-      if(c){ const ctx=c.getContext("2d"); if(ctx){ ctx.fillStyle="black"; ctx.fillRect(0,0,c.width,c.height); } }
-    }catch{}
-  },[]);
-  const getPos=(e)=>{
-    const c=canvasRef.current; const r=c.getBoundingClientRect();
-    return {x:(e.touches?e.touches[0].clientX:e.clientX)-r.left, y:(e.touches?e.touches[0].clientY:e.clientY)-r.top};
-  };
-  const startDraw=(e)=>{ e.preventDefault(); setIsDrawing(true); const c=canvasRef.current; if(!c) return; const ctx=c.getContext("2d"); const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
-  const draw=(e)=>{ e.preventDefault(); if(!isDrawing) return; const c=canvasRef.current; if(!c) return; const ctx=c.getContext("2d"); const p=getPos(e); ctx.lineWidth=3; ctx.lineCap="round"; ctx.strokeStyle="white"; ctx.lineTo(p.x,p.y); ctx.stroke(); };
-  const stopDraw=(e)=>{ if(e) e.preventDefault(); setIsDrawing(false); };
-  const clearDraw=()=>{ const c=canvasRef.current; if(!c) return; const ctx=c.getContext("2d"); ctx.fillStyle="black"; ctx.fillRect(0,0,c.width,c.height); };
-  const startVoice=()=>{
-    try{
-      const W=window; const SR=W.webkitSpeechRecognition||W.SpeechRecognition;
-      if(!SR){ alert("Open in Chrome"); return; }
-      const rec=new SR(); rec.lang="en-US";
-      rec.onresult=(ev)=>{ setInput(ev.results[0][0].transcript); setListening(false); };
-      rec.onerror=()=>setListening(false); rec.onend=()=>setListening(false);
-      rec.start(); setListening(true);
-    }catch{}
-  };
-  const speak=(t,e)=>{
-    try{ const W=window; W.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance((t+" . "+e).replace(/×/g," times ").slice(0,300)); u.lang="en-US"; u.rate=0.9; W.speechSynthesis.speak(u); }catch{}
-  };
-  const speakAll=()=>{
-    try{
-      const W=window; W.speechSynthesis.cancel();
-      board.forEach((b)=>{
-        const u=new SpeechSynthesisUtterance((b.t+" . "+b.e).replace(/×/g," times ").replace(/÷/g," divide ").slice(0,400));
-        u.lang="en-US"; u.rate=0.9; W.speechSynthesis.speak(u);
-      });
-    }catch{}
-  };
-  const stopSpeak=()=>{ try{ window.speechSynthesis.cancel(); }catch{} };
-  const press=(v)=>{ if(v==="Clear"){ setInput(""); setBoard([]); stopSpeak(); return; } setInput(p=>p + (v==="×"?" x ": v==="÷"?" ÷ ": v+" ")); };
-  const checkFree=()=>{ if(!hasPaid && solvesUsed>=1){ setShowPaywall(true); return false; } return true; };
-  const solveAny=()=>{
-    let raw=input.trim().replace(/=$/,"").trim(); if(!raw) return; if(!checkFree()) return;
-    let nb=[]; const lm=langMap[lang]||langMap.English;
-    try{
-      let expr=raw.replace(/x/g,"*").replace(/×/g,"*").replace(/÷/g,"/").replace(/²/g,"**2").replace(/³/g,"**3").replace(/=/g,"");
-      const safe=expr.replace(/[^0-9+\-*/(). ]/g,"").trim();
-      const ans=Function('"use strict"; return ('+safe+')')();
-      nb.push({t:"[CAPS Gr"+grade+" Term "+term+" - "+capsTopics[grade][term]+"] Sum: "+raw, e:"CAPS: "+capsTopics[grade][term]+" - We solve: "+raw});
-      let cur=safe; let m;
-      while((m=cur.match(/\(([^()]+)\)/))!==null){
-        const v=Function('"use strict"; return ('+m[1]+')')();
-        nb.push({t:lm.bracket+": "+m[1]+" = "+v, e:"BODMAS Brackets (M1) - "+m[1]+" = "+v});
-        cur=cur.replace(m[0], String(v));
-      }
-      let mdR=/(-?\d+(\.\d+)?)\s*([*\/])\s*(-?\d+(\.\d+)?)/;
-      while((m=cur.match(mdR))!==null){
-        const a=parseFloat(m[1]); const b=parseFloat(m[4]); const r=m[3]==="*"?a*b:a/b; const s=m[3]==="*"?"x":"div";
-        nb.push({t:lm.times+": "+a+" "+s+" "+b+" = "+r, e:"Multiplication (M1) - "+a+" "+s+" "+b+" = "+r});
-        cur=cur.replace(m[0], String(r));
-      }
-      let asR=/(-?\d+(\.\d+)?)\s*([+\-])\s*(-?\d+(\.\d+)?)/; let tmp=cur; if(tmp.startsWith("-")) tmp="0"+tmp;
-      while((m=tmp.match(asR))!==null && /[+\-]/.test(tmp.slice(1))){
-        const a=parseFloat(m[1]); const b=parseFloat(m[4]); const r=m[3]==="+"?a+b:a-b;
-        nb.push({t:lm.plus+": "+a+" "+m[3]+" "+b+" = "+r, e:"Additive Inverse (M1) - "+a+" "+m[3]+" "+b+" = "+r});
-        tmp=tmp.replace(m[0], String(r));
-      }
-      nb.push({t:"Answer: "+ans+" (A1)", e:"Final CAPS Answer: "+raw+" = "+ans});
-    }catch{ nb=[{t:"[CAPS] Sum: "+raw, e:"Type like 2 x (3+4) - CAPS BODMAS"}]; }
-    setBoard(nb); setStep(0);
-    const nc=solvesUsed+1; setSolvesUsed(nc);
-    try{ localStorage.setItem("caps_CAPS_v6_solves", String(nc)); }catch{}
-    setTimeout(()=>{
-      try{
-        const W=window; W.speechSynthesis.cancel();
-        nb.forEach((b)=>{
-          const u=new SpeechSynthesisUtterance((b.t+" . "+b.e).replace(/×/g," times ").slice(0,400));
-          u.lang="en-US"; u.rate=0.9; W.speechSynthesis.speak(u);
-        });
-      }catch{}
-    },600);
-  };
-  const askTeacher=()=>{
-    if(!teacherQ.trim()) return; if(!checkFree()) return;
-    setTeacherChat(prev=>[...prev, {role:"you", text:teacherQ}, {role:"teacher", text:"[CAPS Gr "+grade+" Term "+term+"] "+capsTopics[grade][term]+" - Method: "+teacherQ+" - Use CAPS BODMAS (M1)"}]);
-    setTeacherQ(""); const nc=solvesUsed+1; setSolvesUsed(nc);
-    try{ localStorage.setItem("caps_CAPS_v6_solves", String(nc)); }catch{}
-  };
-  const checkMock=()=>{
-    if(!checkFree()) return;
-    const correct=capsMocks[grade][term].a.toLowerCase();
-    if(examAns.toLowerCase().includes(correct.toLowerCase()) || correct.includes(examAns.toLowerCase())){ setExamRes("Correct! "+capsMocks[grade][term].a+" (A1)"); }
-    else{ setExamRes("Try again - Hint: "+capsMocks[grade][term].a+" (M1)"); }
-    const nc=solvesUsed+1; setSolvesUsed(nc);
-    try{ localStorage.setItem("caps_CAPS_v6_solves", String(nc)); }catch{}
-  };
-  const kStyle={padding:"10px 0px",background:"#222",color:"#FFD700",borderRadius:"6px",border:"1px solid #444",fontSize:"12px",fontWeight:"bold"};
-  const row={display:"grid",gridTemplateColumns:"repeat(13,1fr)",gap:"4px",marginBottom:"4px"};
+
   return (
-    <div style={{background:"black",color:"white",minHeight:"100vh",padding:"8px"}}>
-      <h2 style={{textAlign:"center",color:"#FFD700",margin:"0px"}}>CAPS MATHS BUDDY 786</h2>
-      <p style={{textAlign:"center",fontSize:"10px",color:"#0f0",margin:"2px 0px"}}>100% DBE CAPS 2026 - Gr {grade} Term {term}</p>
-      <p style={{textAlign:"center",fontSize:"10px",color:"#aaa",margin:"0px"}}>{capsTopics[grade][term]} - {lang} - {hasPaid?"UNLIMITED":(1-solvesUsed)+" FREE"}</p>
-      <div style={{display:"flex",gap:"4px",justifyContent:"center",margin:"6px 0px"}}>
-        {[8,9,10,11,12].map(g=>(
-          <button key={g} onClick={()=>setGrade(g)} style={{flex:1,padding:"8px 2px",borderRadius:"8px",border:grade===g?"2px solid #FFD700":"1px solid #333",background:grade===g?"#FFD700":"#222",color:grade===g?"black":"white",fontWeight:"bold",fontSize:"12px"}}>Gr {g}</button>
+  <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-green-900 to-teal-950 text-white p-2 md:p-4 font-sans">
+    <div className="max-w-5xl mx-auto bg-black/30 backdrop-blur rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] border border-emerald-500/30 overflow-hidden">
+      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 flex flex-wrap justify-between items-center gap-2">
+        <div>
+          <h1 className="text-xl md:text-3xl font-black tracking-tight">{t.buddy}</h1>
+          <p className="text-xs md:text-sm opacity-90">{t.slogan} • Gr {grade} T{term} • {lang} • Perfect App</p>
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {(["8","9","10","11","12"] as Grade[]).map(g=>(
+            <button key={g} onClick={()=>setGrade(g)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${grade===g?"bg-white text-emerald-700 scale-110":"bg-black/30 hover:bg-black/50"}`}>Gr {g}</button>
+          ))}
+        </div>
+        <div className="flex gap-1">
+          {(["1","2","3","4"] as Term[]).map(tt=>(
+            <button key={tt} onClick={()=>setTerm(tt)} className={`px-2.5 py-1 rounded-full text-xs font-bold ${term===tt?"bg-yellow-300 text-black":"bg-black/30"}`}>T{tt}</button>
+          ))}
+          {(["EN","AF","ZU"] as Lang[]).map(l=>(
+            <button key={l} onClick={()=>setLang(l)} className={`px-2 py-1 rounded-full text-[10px] font-bold ${lang===l?"bg-white text-black":"bg-black/30"}`}>{l}</button>
+          ))}
+        </div>
+      </header>
+
+      <nav className="flex gap-1 p-2 bg-black/20 overflow-x-auto">
+        {[
+          {k:"any", label:t.any},
+          {k:"lesson", label:t.lesson},
+          {k:"quiz", label:t.quiz},
+          {k:"past", label:t.past},
+          {k:"calc", label:t.calc},
+        ].map(item=>(
+          <button key={item.k} onClick={()=>setTab(item.k as Tab)} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition ${tab===item.k?"bg-emerald-400 text-black shadow-lg scale-105":"bg-white/10 hover:bg-white/20"}`}>{item.label}</button>
         ))}
-      </div>
-      <div style={{display:"flex",gap:"4px",justifyContent:"center",margin:"6px 0px"}}>
-        {["English","Afrikaans","isiXhosa","isiZulu"].map(l=>(
-          <button key={l} onClick={()=>setLang(l)} style={{flex:1,padding:"6px 2px",borderRadius:"8px",border:lang===l?"2px solid #0f0":"1px solid #333",background:lang===l?"#0f0":"#222",color:lang===l?"black":"white",fontWeight:"bold",fontSize:"10px"}}>{l}</button>
-        ))}
-      </div>
-      <div style={{display:"flex",gap:"6px",justifyContent:"center",margin:"8px 0px"}}>
-        <button onClick={()=>setTab("any")} style={{padding:"8px 14px",borderRadius:"20px",border:"none",background:tab==="any"?"#FFD700":"#333",color:tab==="any"?"black":"white",fontWeight:"bold",fontSize:"11px"}}>ANY CAPS {hasPaid?"∞":(1-solvesUsed)+" free"}</button>
-        <button onClick={()=>setTab("teacher")} style={{padding:"8px 14px",borderRadius:"20px",border:"none",background:tab==="teacher"?"#FFD700":"#333",color:tab==="teacher"?"black":"white",fontWeight:"bold",fontSize:"11px"}}>CAPS Teacher</button>
-        <button onClick={()=>setTab("exam")} style={{padding:"8px 14px",borderRadius:"20px",border:"none",background:tab==="exam"?"#FFD700":"#333",color:tab==="exam"?"black":"white",fontWeight:"bold",fontSize:"11px"}}>CAPS Mocks Term 1-4</button>
-      </div>
-      {showPaywall && (
-        <div style={{position:"fixed",top:"0px",left:"0px",right:"0px",bottom:"0px",background:"rgba(0,0,0,0.95)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-          <div style={{background:"#111",border:"3px solid #FFD700",borderRadius:"16px",padding:"20px",width:"100%",maxWidth:"340px",textAlign:"center"}}>
-            <h3 style={{color:"#FFD700"}}>1 Free Trial Used</h3>
-            <p style={{color:"white",fontSize:"12px"}}>Pay R150/month for unlimited CAPS Gr8-12</p>
-            <button onClick={()=>window.open("https://paystack.shop/pay/caps-maths-buddy-786-r150","_blank")} style={{width:"100%",padding:"14px",background:"#0f0",color:"black",borderRadius:"10px",border:"none",fontWeight:"bold",marginTop:"10px"}}>Pay R150 - Unlock</button>
-            <button onClick={()=>setShowPaywall(false)} style={{width:"100%",marginTop:"10px",padding:"8px",background:"#333",color:"white",borderRadius:"8px",border:"none"}}>Close</button>
-          </div>
-        </div>
-      )}
-      {tab==="any" && (
-        <div style={{border:"2px solid #FFD700",borderRadius:"10px",padding:"8px",background:"black"}}>
-          <div style={{background:"#e8f5c8",border:"3px solid #0f0",borderRadius:"8px",padding:"8px"}}>
-            <textarea value={input} onChange={e=>setInput(e.target.value)} style={{width:"100%",background:"transparent",border:"none",color:"black",fontSize:"16px",fontWeight:"bold",outline:"none",resize:"none"}} rows={2}></textarea>
-            <p style={{margin:"4px 0px 0px 0px",fontSize:"9px",color:"#333"}}>CAPS Topic: {capsTopics[grade][term]}</p>
-          </div>
-          <div style={{marginTop:"8px"}}>
-            <div style={row}>
-              <button onClick={()=>press("7")} style={kStyle}>7</button><button onClick={()=>press("8")} style={kStyle}>8</button><button onClick={()=>press("9")} style={kStyle}>9</button><button onClick={()=>press("()")} style={kStyle}>()</button><button onClick={()=>press("x")} style={kStyle}>x</button><button onClick={()=>press("=")} style={kStyle}>=</button><button onClick={()=>press("÷")} style={kStyle}>÷</button><button onClick={()=>press("4")} style={kStyle}>4</button><button onClick={()=>press("5")} style={kStyle}>5</button><button onClick={()=>press("6")} style={kStyle}>6</button><button onClick={()=>press("+")} style={kStyle}>+</button><button onClick={()=>press("-")} style={kStyle}>-</button><button onClick={()=>press("×")} style={kStyle}>x</button>
-            </div>
-            <div style={row}>
-              <button onClick={()=>press("√")} style={kStyle}>√</button><button onClick={()=>press("1")} style={kStyle}>1</button><button onClick={()=>press("2")} style={kStyle}>2</button><button onClick={()=>press("3")} style={kStyle}>3</button><button onClick={()=>press("²")} style={kStyle}>²</button><button onClick={()=>press("³")} style={kStyle}>³</button><button onClick={()=>press("AB")} style={kStyle}>AB</button><button onClick={()=>press("0")} style={kStyle}>0</button><button onClick={()=>press(".")} style={kStyle}>.</button><button onClick={()=>press("Δ")} style={kStyle}>Δ</button><button onClick={()=>press("∠")} style={kStyle}>∠</button><button onClick={()=>press("°")} style={kStyle}>°</button><button onClick={()=>press("%")} style={kStyle}>%</button>
-            </div>
-          </div>
-          <div style={{display:"flex",gap:"6px",marginTop:"8px"}}>
-            <button onClick={startVoice} style={{flex:1,padding:"10px",background:"#222",color:"white",borderRadius:"8px",border:"1px solid #444",fontSize:"12px"}}>{listening?"Listening...":"Speak CAPS Sum"}</button>
-            <button onClick={clearDraw} style={{padding:"10px 14px",background:"#222",color:"white",borderRadius:"8px",border:"1px solid #444",fontSize:"12px"}}>Clear Board</button>
-            <button onClick={()=>{ setInput(""); setBoard([]); clearDraw(); stopSpeak(); }} style={{padding:"10px 14px",background:"#333",color:"white",borderRadius:"8px",border:"1px solid #444",fontSize:"12px"}}>Clear All</button>
-          </div>
-          <div style={{marginTop:"8px"}}>
-            <p style={{color:"#FFD700",fontSize:"11px",margin:"4px 0px"}}>Chalkboard</p>
-            <canvas ref={canvasRef} width={340} height={90} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} style={{width:"100%",height:"90px",background:"black",borderRadius:"8px",border:"2px dashed #FFD700",touchAction:"none",display:"block"}}></canvas>
-          </div>
-          <div style={{border:"2px dashed #FFD700",borderRadius:"8px",minHeight:"120px",marginTop:"8px",padding:"8px",background:"black"}}>
-            {board.length===0 ? <p style={{color:"#777",fontSize:"12px",textAlign:"center",marginTop:"30px"}}>Gr {grade} Term {term} - Press SOLVE - Lady talks auto start to end</p> : board.map((b,i)=>(
-              <div key={i} style={{background:i===step?"#FFF9C4":"#111",color:i===step?"black":"white",padding:"10px",borderRadius:"8px",marginBottom:"8px",borderLeft:i===step?"6px solid #0f0":"3px solid #444"}}>
-                <p style={{margin:"0px",fontSize:"13px",fontWeight:"bold"}}>{i+1}. {b.t}</p>
-                <pre style={{margin:"6px 0px 0px 0px",fontSize:"13px",whiteSpace:"pre-wrap",background:i===step?"black":"#222",color:i===step?"#ff9800":"#0f0",padding:"10px",borderRadius:"6px",fontWeight:"bold"}}>{b.e}</pre>
-                <button onClick={()=>{ setStep(i); speak(b.t,b.e); }} style={{width:"100%",marginTop:"6px",padding:"6px",background:i===step?"#0f0":"#333",color:i===step?"black":"white",borderRadius:"6px",border:"none",fontSize:"11px",fontWeight:"bold"}}>Hear Step {i+1}</button>
+        <button onClick={()=>setAutoTalk(!autoTalk)} className={`ml-auto px-3 py-2 rounded-full text-xs font-bold ${autoTalk?"bg-green-400 text-black animate-pulse":"bg-red-500/70"}`}>{isTalking?"🔊 Speaking...": autoTalk ? "🔊 Auto Talk ON" : "🔇 Auto Talk OFF"}</button>
+      </nav>
+
+      <main className="p-3 md:p-5 space-y-4">
+        {tab==="any" && (
+          <div className="space-y-3">
+            <div className="bg-white/10 rounded-2xl p-3 border border-emerald-500/20">
+              <h2 className="font-bold text-emerald-300 text-sm mb-2">Any Subject Help - Type Anything - Maths, Science, English, Life Science...</h2>
+              <div className="flex gap-2">
+                <input value={question} onChange={e=>setQuestion(e.target.value)} onKeyDown={e=>e.key==="Enter" && handleAsk()} placeholder={t.ask} className="flex-1 px-4 py-3 rounded-full bg-black/50 border border-white/10 text-sm focus:outline-none focus:border-emerald-400" />
+                <button onClick={handleAsk} className="px-6 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 font-black text-sm shadow-lg hover:scale-105 transition">ASK</button>
               </div>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:"8px",justifyContent:"center",marginTop:"10px"}}>
-            <button onClick={()=>{ setStep(s=>Math.max(0,s-1)); stopSpeak(); }} style={{padding:"10px 16px",background:"#333",color:"white",borderRadius:"8px",border:"none"}}>Back</button>
-            <button onClick={speakAll} style={{padding:"10px 20px",background:"#FFD700",color:"black",borderRadius:"20px",border:"none",fontWeight:"bold"}}>Play ALL Start to End</button>
-            <button onClick={stopSpeak} style={{padding:"10px 16px",background:"#f44336",color:"white",borderRadius:"8px",border:"none"}}>Stop</button>
-            <button onClick={()=>setStep(s=>Math.min(board.length-1,s+1))} style={{padding:"10px 16px",background:"#333",color:"white",borderRadius:"8px",border:"none"}}>Next</button>
-          </div>
-          <button onClick={solveAny} style={{width:"100%",marginTop:"12px",padding:"14px",background:"#0f0",color:"black",borderRadius:"8px",border:"none",fontWeight:"bold",fontSize:"14px"}}>SOLVE CAPS - Auto Talk</button>
-        </div>
-      )}
-      {tab==="teacher" && (
-        <div style={{background:"#111",border:"2px solid #0f0",padding:"12px",borderRadius:"12px",marginTop:"10px"}}>
-          <h3 style={{color:"#0f0",margin:"0px",fontSize:"14px"}}>CAPS Teacher - Gr {grade} Term {term}</h3>
-          <p style={{color:"#aaa",fontSize:"10px",margin:"2px 0px"}}>{capsTopics[grade][term]} - Stays in app</p>
-          <div style={{background:"black",borderRadius:"8px",padding:"8px",height:"250px",overflowY:"auto",marginTop:"8px",border:"1px solid #333"}}>
-            {teacherChat.map((m,i)=>(
-              <div key={i} style={{margin:"6px 0px",padding:"8px",borderRadius:"8px",background:m.role==="you"?"#333":"#0a2a0a"}}>
-                <p style={{margin:"0px",fontSize:"12px",color:"white"}}>{m.text}</p>
+            </div>
+            {answer && (
+              <div className="bg-gradient-to-br from-white to-emerald-50 text-black rounded-2xl p-4 shadow-xl border-l-4 border-emerald-500">
+                <p className="text-xs font-bold text-emerald-700 mb-1">Perfect Answer - Gr {grade} Term {term} - {lang}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{answer}</p>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={()=>speak(answer)} className="px-3 py-1.5 rounded-full bg-black text-white text-xs">🔊 Speak Again</button>
+                  <button onClick={()=>{ setAnswer(""); setQuestion(""); }} className="px-3 py-1.5 rounded-full bg-white border text-xs">Clear</button>
+                </div>
               </div>
-            ))}
+            )}
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
+                <h3 className="font-bold text-xs text-emerald-300">Current: Gr {grade} Term {term} - {current.title}</h3>
+                <ul className="mt-2 space-y-1">
+                  {current.lessons.map((ls:string, i:number)=>(
+                    <li key={i} className="text-xs bg-white/5 rounded px-2 py-1.5 flex justify-between"><span>{i+1}. {ls}</span><button onClick={()=>{setQuestion(`Explain ${ls} Grade ${grade}`); setTimeout(handleAsk,100);}} className="text-[10px] bg-emerald-500/30 px-2 rounded">Learn</button></li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
+                <h3 className="font-bold text-xs text-yellow-300">Quick CAPS Formula Sheet Gr {grade}</h3>
+                <div className="text-[11px] mt-2 space-y-1 leading-relaxed opacity-90">
+                  <p><b>Finance:</b> A=P(1+in) | A=P(1+i)^n</p>
+                  <p><b>Quadratic:</b> x = [-b ± √(b²-4ac)]/2a</p>
+                  <p><b>Pythagoras:</b> a²+b²=c²</p>
+                  <p><b>Trig:</b> sin²+cos²=1 | Area Δ = ½ab sinC</p>
+                  <p><b>Stats:</b> Mean = Σx/n | SD = √(Σ(x-mean)²/n)</p>
+                  <p><b>Calculus Gr12:</b> f'(x)=lim h→0 [f(x+h)-f(x)]/h</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{display:"flex",gap:"6px",marginTop:"8px"}}>
-            <input value={teacherQ} onChange={e=>setTeacherQ(e.target.value)} placeholder="Ask CAPS sum" style={{flex:1,padding:"10px",borderRadius:"8px",background:"black",color:"white",border:"2px solid #0f0"}} />
-            <button onClick={askTeacher} style={{padding:"10px 14px",background:"#0f0",color:"black",borderRadius:"8px",border:"none",fontWeight:"bold"}}>Ask CAPS</button>
+        )}
+
+        {tab==="lesson" && (
+          <div className="space-y-3">
+            <h2 className="font-black text-lg">Lesson: {current.title} - Grade {grade} Term {term}</h2>
+            <div className="bg-white text-black rounded-2xl p-4 space-y-3">
+              <p className="text-sm"><b>CAPS Outcome:</b> Master {current.title} for Grade {grade}. Aligned to DBE Term {term} ATP.</p>
+              <div className="bg-emerald-50 rounded-xl p-3 border">
+                <p className="font-bold text-xs text-emerald-800">Step-by-Step Example:</p>
+                <p className="text-xs mt-1">Example for {current.lessons[0]}: Solve 2x + 3 = 11. Subtract 3 both sides: 2x = 8. Divide 2: x=4. Check: 2*4+3=11 ✓. This is Grade {grade} level CAPS method.</p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-2">
+                {current.lessons.map((ls:string, i:number)=>(
+                  <button key={i} onClick={()=>{ setQuestion(`Full lesson ${ls} with examples Grade ${grade} Term ${term}`); setTab("any"); setTimeout(handleAsk,100); }} className="text-left bg-black/5 hover:bg-emerald-100 rounded-xl p-3 border text-xs"><b>{ls}</b><br/><span className="text-[10px] opacity-70">Tap to learn full lesson with Auto Talk</span></button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-      {tab==="exam" && (
-        <div style={{background:"#111",border:"2px solid #FFD700",padding:"12px",borderRadius:"12px",marginTop:"10px"}}>
-          <h3 style={{color:"#FFD700",margin:"0px",fontSize:"14px"}}>CAPS Exam Mocks - Gr {grade}</h3>
-          <div style={{display:"flex",gap:"6px",marginTop:"10px"}}>
-            {[1,2,3,4].map(t=>(
-              <button key={t} onClick={()=>setTerm(t)} style={{f
+        )}
+
+        {tab==="quiz" && (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <h2 className="font-black">Quiz - Gr {grade} T{term} - Score {score}</h2>
+              <button onClick={()=>{setScore(0); setQuizIndex(0);}} className="text-xs bg-white/10 px-3 py-1 rounded-full">Reset</button>
+            </div>
+            <div className="bg-white text-black rounded-2xl p-4">
+              {(() => {
+                const qs = current.quiz.length ? current.quiz : [{q:`Solve: What is core topic of ${current.title}?`, a: current.lessons[0], opts: current.lessons}];
+                const curQ = qs[quizIndex % qs.length];
+                return (
+                  <div>
+                    <p className="font-bold text-sm mb-3">Q{quizIndex+1}: {curQ.q}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {curQ.opts.map((opt:string)=>(
+                        <button key={opt} onClick={()=>handleQuiz(opt)} className="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-500 hover:text-white border text-xs font-bold transition">{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              {answer && <p className="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded">{answer}</p>}
+            </div>
+          </div>
+        )}
+
+        {tab==="past" && (
+          <div className="space-y-3">
+            <h2 className="font-black">Past Papers & Memos - Gr {grade} Term {term}</h2>
+            <div className="grid md:grid-cols-2 gap-2">
+              {[
+                `Gr ${grade} Maths Paper 1 Term ${term} Nov 2024 + Memo`,
+                `Gr ${grade} Maths Paper 2 Term ${term} Nov 2023 + Memo`,
+                `Gr ${grade} Maths Assignment Term ${term} 2024`,
+                `Gr ${grade} CAPS ATP Term ${term} Checklist`,
+              ].map((p,i)=>(
+                <div key={i} className="bg-white/10 rounded-xl p-3 border border-white/10 flex justify-between items-center">
+                  <span className="text-xs">{p}</span>
+                  <button onClick={()=>{setQuestion(`Summarise ${p} and give key questions`); setTab("any");}} className="text-[10px] bg-white text-black px-2 py-1 rounded-full">Open</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab==="calc" && (
+          <div className="space-y-3">
+            <h2 className="font-black">Smart Calculator - CAPS Formula Solver</h2>
+            <div className="bg-white text-black rounded-2xl p-4">
+              <p className="text-xs mb-2">Type calculation like: 2^5 + sqrt(16) or finance P=1000 i=0.1 n=3</p>
+              <div className="flex gap-2">
+                <input value={question} onChange={e=>setQuestion(e.target.value)} placeholder="e.g. 2^5 * 3 + 100(1+0.1)^3" className="flex-1 px-3 py-2 rounded-full bg-black/5 border text-sm" />
+                <button onClick={()=>{
+                  try{
+                    let expr = question.replace(/\^/g,"**").replace(/sqrt/g,"Math.sqrt");
+                    let res = Function(`"use strict"; return (${expr})`)();
+                    setAnswer(`Calculation: ${question} = ${res}. CAPS method shown step-by-step.`);
+                  } catch(e){ setAnswer("Invalid expression - Try like 2**5 or Math.sqrt(16) or (1000*(1+0.1)**3)"); }
+                }} className="px-5 py-2 rounded-full bg-black text-white text-xs font-bold">SOLVE</button>
+              </div>
+              {answer && <p className="mt-3 text-sm font-bold">{answer}</p>}
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="p-3 text-center border-t border-white/10 bg-black/20">
+        <p className="text-[10px] opacity-60">© 2026 CAPS MATHS BUDDY 786 - Gr 8-12 Term 1-4 - {lang} - Perfect App - Dream App - Auto Talk Enabled - Built with ❤️ for South Africa - All Subjects Support</p>
+        <p className="text-[9px] opacity-40 mt-1">DBE CAPS Aligned | NSC Matric Ready | 786 Blessed</p>
+      </footer>
+    </div>
+  </div>
+  );
+    }            <div className="grid md:grid-cols-2 gap-2">
+              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
+                <h3 className="font-bold text-xs text-emerald-300">Current: Gr {grade} Term {term} - {current.title}</h3>
+                <ul className="mt-2 space-y-1">
+                  {current.lessons.map((ls:string, i:number)=>(
+                    <li key={i} className="text-xs bg-white/5 rounded px-2 py-1.5 flex justify-between"><span>{i+1}. {ls}</span><button onClick={()=>{setQuestion(`Explain ${ls} Grade ${grade}`); setTimeout(handleAsk,100);}} className="text-[10px] bg-emerald-500/30 px-2 rounded">Learn</button></li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
+                <h3 className="font-bold text-xs text-yellow-300">Quick CAPS Formula Sheet Gr {grade}</h3>
+                <div className="text-[11px] mt-2 space-y-1 leading-relaxed opacity-90">
+                  <p><b>Finance:</b> A=P(1+in) | A=P(1+i)^n</p>
+                  <p><b>Quadratic:</b> x = [-b ± √(b²-4ac)]/2a</p>
+                  <p><b>Pythagoras:</b> a²+b²=c²</p>
+                  <p><b>Trig:</b> sin²+cos²=1 | Area Δ = ½ab sinC</p>
+                  <p><b>Stats:</b> Mean = Σx/n</p>
+                  <p><b>Calculus Gr12:</b> f'(x)=lim h→0 [f(x+h)-f(x)]/h</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="lesson" && (
+          <div className="space-y-3">
+            <h2 className="font-black text-lg">Lesson: {current.title} - Grade {grade} Term {term}</h2>
+            <div className="bg-white text-black rounded-2xl p-4 space-y-3">
+              <p className="text-sm"><b>CAPS Outcome:</b> Master {current.title} for Grade {grade}. Aligned to DBE Term {term} ATP.</p>
+              <div className="bg-emerald-50 rounded-xl p-3 border">
+                <p className="font-bold text-xs text-emerald-800">Step-by-Step Example:</p>
+                <p className="text-xs mt-1">Example for {current.lessons[0]}: Solve 2x + 3 = 11. Subtract 3 both sides: 2x = 8. Divide 2: x=4. Check: 2*4+3=11 ✓.</p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-2">
+                {current.lessons.map((ls:string, i:number)=>(
+                  <button key={i} onClick={()=>{ setQuestion(`Full lesson ${ls} with examples Grade ${grade} Term ${term}`); setTab("any"); setTimeout(handleAsk,100); }} className="text-left bg-black/5 hover:bg-emerald-100 rounded-xl p-3 border text-xs"><b>{ls}</b><br/><span className="text-[10px] opacity-70">Tap to learn full lesson</span></button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="quiz" && (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <h2 className="font-black">Quiz - Gr {grade} T{term} - Score {score}</h2>
+              <button onClick={()=>{setScore(0); setQuizIndex(0);}} className="text-xs bg-white/10 px-3 py-1 rounded-full">Reset</button>
+            </div>
+            <div className="bg-white text-black rounded-2xl p-4">
+              {(() => {
+                const qs = current.quiz.length ? current.quiz : [{q:`Solve: What is core topic of ${current.title}?`, a: current.lessons[0], opts: current.lessons}];
+                const curQ = qs[quizIndex % qs.length];
+                return (
+                  <div>
+                    <p className="font-bold text-sm mb-3">Q{quizIndex+1}: {curQ.q}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {curQ.opts.map((opt:string)=>(
+                        <button key={opt} onClick={()=>handleQuiz(opt)} className="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-500 hover:text-white border text-xs font-bold transition">{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              {answer && <p className="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded">{answer}</p>}
+            </div>
+          </div>
+        )}
+
+        {tab==="past" && (
+          <div className="space-y-3">
+            <h2 className="font-black">Past Papers & Memos - Gr {grade} Term {term}</h2>
+            <div className="grid md:grid-cols-2 gap-2">
+              {[
+                `Gr ${grade} Maths Paper 1 Term ${term} Nov 2024 + Memo`,
+                `Gr ${grade} Maths Paper 2 Term ${term} Nov 2023 + Memo`,
+                `Gr ${grade} Maths Assignment Term ${term} 2024`,
+                `Gr ${grade} CAPS ATP Term ${term} Checklist`,
+              ].map((p,i)=>(
+                <div key={i} className="bg-white/10 rounded-xl p-3 border border-white/10 flex justify-between items-center">
+                  <span className="text-xs">{p}</span>
+                  <button onClick={()=>{setQuestion(`Summarise ${p} and give key questions`); setTab("any");}} className="text-[10px] bg-white text-black px-2 py-1 rounded-full">Open</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab==="calc" && (
+          <div className="space-y-3">
+            <h2 className="font-black">Smart Calculator - CAPS Formula Solver</h2>
+            <div className="bg-white text-black rounded-2xl p-4">
+              <p className="text-xs mb-2">Type calculation like: 2^5 + sqrt(16)</p>
+              <div className="flex gap-2">
+                <input value={question} onChange={e=>setQuestion(e.target.value)} placeholder="e.g. 2^5 * 3 + 100(1+0.1)^3" className="flex-1 px-3 py-2 rounded-full bg-black/5 border text-sm" />
+                <button onClick={()=>{
+                  try{
+                    let expr = question.replace(/\^/g,"**").replace(/sqrt/g,"Math.sqrt");
+                    let res = Function(`"use strict"; return (${expr})`)();
+                    setAnswer(`Calculation: ${question} = ${res}. CAPS method shown step-by-step.`);
+                  } catch(e){ setAnswer("Invalid expression - Try like 2**5 or Math.sqrt(16)"); }
+                }} className="px-5 py-2 rounded-full bg-black text-white text-xs font-bold">SOLVE</button>
+              </div>
+              {answer && <p className="mt-3 text-sm font-bold">{answer}</p>}
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="p-3 text-center border-t border-white/10 bg-black/20">
+        <p className="text-[10px] opacity-60">© 2026 CAPS MATHS BUDDY 786 - Gr 8-12 Term 1-4 - {lang} - Perfect App - Dream App - Auto Talk Enabled - Built with ❤️ for South Africa - All Subjects Support</p>
+        <p className="text-[9px] opacity-40 mt-1">DBE CAPS Aligned | NSC Matric Ready | 786 Blessed</p>
+      </footer>
+    </div>
+  </div>
+  );
+                                        }
