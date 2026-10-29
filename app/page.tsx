@@ -1,5 +1,5 @@
-// @ts-nocheck
 "use client";
+// @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 export default function Home(){
   const [input,setInput]=useState("2 x (3+4)");
